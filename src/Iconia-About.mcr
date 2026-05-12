@@ -1,4 +1,11 @@
-macroScript Iconia_About category:"Iconia" tooltip:"À propos de Iconia"
+/*
+================================================================================
+Script Name: Iconia_About
+Category: Iconia
+Description: Affiche la version et contrôle les mises à jour.
+================================================================================
+*/
+macroScript Iconia_About category:"Iconia" tooltip:"À propos de Iconia tools"
 (
     -- -----------------------------------------------
     -- Config
