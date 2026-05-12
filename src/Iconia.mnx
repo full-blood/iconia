@@ -8,4 +8,7 @@
     <MoveItem DestinationId="36080309-8c91-4733-837f-6e7eb6591cdc" ItemId="4283fd46-f18c-4dcd-a47d-305d798bd2d3"/>
     <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="8eec5ea0-2205-4581-a96d-44a6f949f7a4" ActionId="647394-Iconia_PasteAsset`Iconia" BeforeId="6d23fd14-a231-4718-bf45-2a8bc1556f44"/>
     <CreateMenuAction MenuId="36080309-8c91-4733-837f-6e7eb6591cdc" Id="00d84281-d989-4d2c-8e3a-1138fab5d278" ActionId="647394-Iconia_ScriptManager`Iconia" BeforeId="4283fd46-f18c-4dcd-a47d-305d798bd2d3"/>
+    <CreateMenuSeparator MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="3f5f46f8-0afc-483d-9b6f-133a628e9fab" BeforeId="8eec5ea0-2205-4581-a96d-44a6f949f7a4"/>
+    <MoveItem DestinationId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" ItemId="8eec5ea0-2205-4581-a96d-44a6f949f7a4" BeforeId="3f5f46f8-0afc-483d-9b6f-133a628e9fab"/>
+    <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="4c05c890-c304-45bc-a0e1-8adfd4b26859" ActionId="647394-Iconia_FileChecker`Iconia" BeforeId="3f5f46f8-0afc-483d-9b6f-133a628e9fab"/>
 </MaxMenuTransformations>

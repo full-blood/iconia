@@ -2,7 +2,7 @@
 ================================================================================
 Script Name: Iconia_PasteAsset
 Category: Iconia
-Description: Merge l'asset sélectionné dans la librarie L:/3-Models/Library.html
+Description: Merge l'asset sélectionné depuis la librarie L:/3-Models/Library.html
 ================================================================================
 */
 macroScript Iconia_PasteAsset
