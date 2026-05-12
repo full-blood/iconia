@@ -10,7 +10,7 @@ Description: Aide pour les scripts Iconia.
 macroScript Iconia_ScriptManager
     category:"Iconia" 
     tooltip:"Iconia Scripts description"
-    buttonText:"Iconia tools Help"
+    buttonText:"Help"
 (
     rollout Iconia_Manager_UI "Iconia Script Helper" width:450 height:320
     (

@@ -3,4 +3,9 @@
     <CreateMenu ParentId="b4779ebb-a6f0-4815-9777-57c01c0b584c" MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Title="Iconia"/>
     <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="4283fd46-f18c-4dcd-a47d-305d798bd2d3" ActionId="647394-Iconia_About`Iconia"/>
     <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="6d23fd14-a231-4718-bf45-2a8bc1556f44" ActionId="647394-Iconia_SaveArchiveSelection`Iconia" BeforeId="4283fd46-f18c-4dcd-a47d-305d798bd2d3"/>
+    <CreateMenuSeparator MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="e58725ef-0dd6-4f9d-b164-2f9eb5aad3ef" BeforeId="4283fd46-f18c-4dcd-a47d-305d798bd2d3"/>
+    <CreateMenu ParentId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" MenuId="36080309-8c91-4733-837f-6e7eb6591cdc" Title="Help" BeforeId="4283fd46-f18c-4dcd-a47d-305d798bd2d3"/>
+    <MoveItem DestinationId="36080309-8c91-4733-837f-6e7eb6591cdc" ItemId="4283fd46-f18c-4dcd-a47d-305d798bd2d3"/>
+    <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="8eec5ea0-2205-4581-a96d-44a6f949f7a4" ActionId="647394-Iconia_PasteAsset`Iconia" BeforeId="6d23fd14-a231-4718-bf45-2a8bc1556f44"/>
+    <CreateMenuAction MenuId="36080309-8c91-4733-837f-6e7eb6591cdc" Id="00d84281-d989-4d2c-8e3a-1138fab5d278" ActionId="647394-Iconia_ScriptManager`Iconia" BeforeId="4283fd46-f18c-4dcd-a47d-305d798bd2d3"/>
 </MaxMenuTransformations>
