@@ -179,21 +179,30 @@ echo  Archive : %mzpfile%
 echo ============================================
 echo.
 
-:: --- Git push ---
-set /p dopublish="Publier sur GitHub (git add/commit/push) ? (o/n) : "
+:: --- Git push & GitHub Release ---
+set /p dopublish="Publier sur GitHub et creer la release automatique ? (o/n) : "
 if /I not "%dopublish%"=="o" goto done
 
 pushd "%repodir%"
+:: 1. On pousse le code sur le repo
+echo.
+echo Envoi du code sur GitHub...
 git add .
 git commit -m "release v%currentver%"
 git push
+
+:: 2. On cree la release et on attache le .mzp
+echo.
+echo Creation de la Release GitHub v%currentver%...
+gh release create "v%currentver%" "Iconia.mzp" --title "Mise a jour %currentver%" --generate-notes
+
 popd
 
 echo.
-echo Pushed. Cree la Release sur GitHub :
-echo https://github.com/full-blood/iconia/releases/new
-echo Tag : v%currentver%
-echo Asset a uploader : Iconia.mzp
+echo ============================================
+echo  Succes ! Release v%currentver% publiee.
+echo  Verifie ici : https://github.com/full-blood/iconia/releases/latest
+echo ============================================
 
 :done
 echo.
