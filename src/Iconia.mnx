@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MaxMenuTransformations>
+    <CreateMenu ParentId="b4779ebb-a6f0-4815-9777-57c01c0b584c" MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Title="Iconia"/>
+    <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="4283fd46-f18c-4dcd-a47d-305d798bd2d3" ActionId="647394-Iconia_About`Iconia"/>
+    <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="6d23fd14-a231-4718-bf45-2a8bc1556f44" ActionId="647394-Iconia_SaveArchiveSelection`Iconia" BeforeId="4283fd46-f18c-4dcd-a47d-305d798bd2d3"/>
+</MaxMenuTransformations>
