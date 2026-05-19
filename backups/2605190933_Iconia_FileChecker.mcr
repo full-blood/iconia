@@ -201,7 +201,7 @@ macroScript Iconia_FileChecker
         label lbl_prev_title_s2 "Preview :" pos:[180,208] width:590 height:16 visible:false
         edittext edt_before_s2 "" pos:[180,228] width:590 height:22 readOnly:true visible:false
         label lbl_arrow_s2 "▼" pos:[465,254] width:30 height:18 align:#center visible:false
-        edittext edt_after_s2  "" pos:[180,274] width:590 height:22 visible:false
+        edittext edt_after_s2  "" pos:[180,274] width:590 height:22 readOnly:true visible:false
         button btn_main_s2 "RETRY CHECK" pos:[635,525] width:120 height:60 align:#center visible:false
         button btn_confirm_s2 "RENAME FILE\nON DISK" pos:[405,400] width:120 height:60 visible:false
 
@@ -534,16 +534,23 @@ macroScript Iconia_FileChecker
             
             if (findString sLow "corona") != undefined then hasCorona = true
             
-            for crPat in #("_cr", "-cr") do (
-                local searchIn = sLow
-                local pos = findString searchIn crPat
+            if (findString sLow "_cr") != undefined then (
+                local pos = findString sLow "_cr"
                 while pos != undefined do (
-                    local afterPos = pos + crPat.count
-                    local charAfter = if afterPos <= searchIn.count then substring searchIn afterPos 1 else ""
+                    local afterPos = pos + 3
+                    local charAfter = if afterPos <= sLow.count then substring sLow afterPos 1 else ""
                     if charAfter == "" or charAfter == "_" or charAfter == "-" or charAfter == " " or (charAfter >= "0" and charAfter <= "9") then hasCorona = true
-                    -- Avance en tronquant la string pour simuler une recherche à partir de pos+1
-                    if pos < searchIn.count then searchIn = substring searchIn (pos + 1) -1 else searchIn = ""
-                    pos = findString searchIn crPat
+                    pos = findString sLow "_cr" (pos + 1)
+                )
+            )
+            
+            if (findString sLow "-cr") != undefined then (
+                local pos = findString sLow "-cr"
+                while pos != undefined do (
+                    local afterPos = pos + 3
+                    local charAfter = if afterPos <= sLow.count then substring sLow afterPos 1 else ""
+                    if charAfter == "" or charAfter == "_" or charAfter == "-" or charAfter == " " or (charAfter >= "0" and charAfter <= "9") then hasCorona = true
+                    pos = findString sLow "-cr" (pos + 1)
                 )
             )
             
@@ -585,45 +592,9 @@ macroScript Iconia_FileChecker
             for v in coronarenderVariants do s = substituteString s v ""
             local coronaVariants = #("(Corona)", "(corona)", "(CORONA)", "_Corona",  "-Corona",  " Corona", "_corona",  "-corona",  " corona", "_CORONA",  "-CORONA",  " CORONA", "Corona",   "corona",   "CORONA")
             for v in coronaVariants do s = substituteString s v ""
-            -- Suppression de _CR / -CR uniquement quand précédé d'un séparateur
-            -- et suivi d'un séparateur, chiffre ou fin de chaîne (évite "cream", "across"…)
-            fn removeCRtag str = (
-                local result = str
-                local sLow2  = toLower result
-                local pat    = undefined
-                for p in #("_cr", "-cr") do (
-                    local searchIn = sLow2
-                    local offset   = 0
-                    local pos = findString searchIn p
-                    while pos != undefined do (
-                        local realPos  = offset + pos
-                        local afterPos = realPos + p.count
-                        local charAfter = if afterPos <= result.count then (toLower (substring result afterPos 1)) else ""
-                        local isSafeAfter = (charAfter == "" or charAfter == "_" or charAfter == "-" or charAfter == " " or (charAfter >= "0" and charAfter <= "9"))
-                        if isSafeAfter then (
-                            result  = (if realPos > 1 then substring result 1 (realPos - 1) else "") + (if afterPos <= result.count then substring result afterPos -1 else "")
-                            sLow2   = toLower result
-                            offset  = 0
-                            searchIn = sLow2
-                        ) else (
-                            offset   += pos
-                            searchIn  = substring sLow2 (offset + 1) -1
-                        )
-                        pos = findString searchIn p
-                    )
-                )
-                return result
-            )
-            s = removeCRtag s
-            -- Suppression de "Copie" / "copie" en fin de nom (avec ou sans " - " avant)
-            local copieVariants = #(" - Copie", " - copie", "-Copie", "-copie", "_Copie", "_copie", " Copie", " copie", "Copie", "copie")
-            for v in copieVariants do (
-                if s.count >= v.count do (
-                    local tail = substring s (s.count - v.count + 1) v.count
-                    if (stricmp tail v == 0) do s = substring s 1 (s.count - v.count)
-                )
-            )
-            local vrayVariants = #("_V-ray", "-V-ray", " V-ray", "(V-ray)", "_v-ray", "-v-ray", " v-ray", "(v-ray)", "_V-Ray", "-V-Ray", " V-Ray", "(V-Ray)", "V-ray", "v-ray", "V-Ray", "_VRay", "-VRay", " VRay", "(VRay)", "_vray", "-vray", " vray", "(vray)", "_VRAY", "-VRAY", " VRAY", "(VRAY)", "_Vray", "-Vray", " Vray", "(Vray)", "_VRayMtl","-VRayMtl"," VRayMtl", "VRay", "vray", "VRAY", "Vray")
+            local crVariants = #("_CR", "-CR", "_cr", "-cr", "_Cr", "-Cr")
+            for v in crVariants do s = substituteString s v ""
+            local vrayVariants = #("_VRay", "-VRay", " VRay", "(VRay)", "_vray", "-vray", " vray", "(vray)", "_VRAY", "-VRAY", " VRAY", "(VRAY)", "_Vray", "-Vray", " Vray", "(Vray)", "_VRayMtl","-VRayMtl"," VRayMtl", "VRay", "vray", "VRAY", "Vray")
             for v in vrayVariants do s = substituteString s v ""
             
             local prevS = ""
@@ -657,7 +628,7 @@ macroScript Iconia_FileChecker
             local rawBase = getFilenameFile maxFileName; local result = cleanMaxFileName rawBase; cleanedName = result[1]; local hasCoronaFlag = result[2]
             local logLines = #(); append logLines ("File   : " + maxFileName); append logLines ("Path   : " + maxFilePath); append logLines ""
             local rawLow = toLower rawBase
-            if (findString rawLow "vray") != undefined or (findString rawLow "v-ray") != undefined then append logLines "⚠  VRay/V-ray detected → will be removed"
+            if (findString rawLow "vray") != undefined then append logLines "⚠  VRay detected → will be removed"
             if hasCoronaFlag then append logLines "✓  Corona detected → will become _corona suffix"
             local hasYear = false
             for yearSep in #("_", "-", " ") do ( for yearPfx in #("19", "20") do ( local yp = findString rawBase (yearSep + yearPfx); if yp != undefined and (yp + 4) <= rawBase.count do hasYear = true ) )
@@ -1209,8 +1180,7 @@ macroScript Iconia_FileChecker
         on btn_confirm_s2 pressed do (
             if currentStep == 2 and step2_state == 2 then (
                 local fullPath = maxFilePath + maxFileName
-                local finalName = trimLeft (trimRight edt_after_s2.text)
-                local result   = doRenameOnDisk fullPath finalName
+                local result   = doRenameOnDisk fullPath cleanedName
 
                 if result[1] == true then (
                     if result[2] == "unchanged" then lst_log_s2.items = #("File was already correctly named.", "Nothing changed.")

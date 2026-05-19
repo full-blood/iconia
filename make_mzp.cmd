@@ -94,6 +94,16 @@ set "installfile=%outdir%\install_scripts.ms"
 >>"%installfile%" echo safeCopy (tempDir + "Iconia_loader.ms")   iconiaLoaderPath
 >>"%installfile%" echo safeCopy (tempDir + "version.txt")        iconiaVersionPath
 >>"%installfile%" echo.
+>>"%installfile%" echo -- -----------------------------------------------
+>>"%installfile%" echo -- Nettoyage des anciens fichiers "Iconia-" dans userMacros
+>>"%installfile%" echo -- -----------------------------------------------
+>>"%installfile%" echo oldFiles = getFiles (userMacroDir + "\\Iconia-*.mcr")
+>>"%installfile%" echo join oldFiles (getFiles (userMacroDir + "\\Iconia_*.mcr"))
+>>"%installfile%" echo for f in oldFiles do (
+>>"%installfile%" echo     deleteFile f
+>>"%installfile%" echo     format "Supprime : %%\n" f
+>>"%installfile%" echo )
+>>"%installfile%" echo.
 >>"%installfile%" echo genericFiles = #(
 
 set first=1
