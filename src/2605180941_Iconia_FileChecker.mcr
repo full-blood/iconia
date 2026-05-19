@@ -28,7 +28,6 @@ macroScript Iconia_FileChecker
     local keyword_library = #()
     local netKeywords_Cache = undefined
     local step9_Initialized = false
-	local folderAliases = #()
 
     fn toNetArray arr = (
         local na = dotNetObject "System.String[]" arr.count
@@ -42,13 +41,6 @@ macroScript Iconia_FileChecker
         if arr.count > 0 do ctrl.Items.AddRange (toNetArray arr)
         ctrl.EndUpdate()
     )
-	
-	fn resolveFolderAlias rawName = (
-		for pair in folderAliases do (
-			if (stricmp pair[1] rawName == 0) do return pair[2]
-		)
-		return rawName  -- pas d'alias trouvé, on retourne tel quel
-	)
 
     -- ===========================================================
     -- FENÊTRE DE CHARGEMENT (SPLASH SCREEN)
@@ -559,8 +551,8 @@ macroScript Iconia_FileChecker
                 local i = 1
                 while i <= result.count do (
                     local c = substring result i 1
-					local isSep  = (c == "_" or c == "-" or c == " " or c == "{" or c == "[" or c == "(" or c == ".")
-					local isAlph = ((c >= "a" and c <= "z") or (c >= "A" and c <= "Z"))
+                    local isSep  = (c == "_" or c == "-" or c == " ")
+                    local isAlph = ((c >= "a" and c <= "z") or (c >= "A" and c <= "Z"))
                     
                     if (isSep or isAlph) and (i + 4 <= result.count) then (
                         local d1 = substring result (i+1) 1
@@ -572,7 +564,7 @@ macroScript Iconia_FileChecker
                         
                         if isYear then (
                             local after = if (i + 5) <= result.count then (substring result (i+5) 1) else ""
-                            local isEnd = (after == "" or after == "_" or after == "-" or after == " " or after == "}" or after == "]" or after == ")")
+                            local isEnd = (after == "" or after == "_" or after == "-" or after == " ")
                             
                             if isEnd then (
                                 local startIdx = if isSep then (i - 1 + 1) else i
@@ -601,8 +593,8 @@ macroScript Iconia_FileChecker
             while prevS != s do ( prevS = s; s = substituteString s "__" "_" )
             prevS = ""
             while prevS != s do ( prevS = s; s = substituteString s "--" "-" )
-            while s.count > 0 do ( local last = substring s s.count 1; if last == "_" or last == "-" or last == " " or last == "}" or last == "]" or last == ")" then s = substring s 1 (s.count - 1) else exit )
-			while s.count > 0 do ( local first = substring s 1 1; if first == "_" or first == "-" or first == " " or first == "{" or first == "[" or first == "(" then s = substring s 2 -1 else exit )
+            while s.count > 0 do ( local last = substring s s.count 1; if last == "_" or last == "-" or last == " " then s = substring s 1 (s.count - 1) else exit )
+            while s.count > 0 do ( local first = substring s 1 1; if first == "_" or first == "-" or first == " " then s = substring s 2 -1 else exit )
             
             if hasCorona then s = s + "_corona"
             return #(s, hasCorona)
@@ -1034,7 +1026,7 @@ macroScript Iconia_FileChecker
                         cbx_cat.Text = loaded_cat
                         local foundSubs = #()
                         for d in database do (
-                            if (stricmp d.catName loaded_cat) == 0 do (
+                            if d.catName == loaded_cat do (
                                 for s in d.subcats do append foundSubs s; sort foundSubs; exit
                             )
                         )
@@ -1045,8 +1037,8 @@ macroScript Iconia_FileChecker
                     for k in loaded_keywords do ( if idx <= 15 do ( kFields[idx].Text = k; idx += 1 ) )
                 ) else (
                     local searchPathFolders = filterString maxFilePath "\\"
-					if searchPathFolders.count >= 3 do (
-						local folderCat = resolveFolderAlias searchPathFolders[3]
+                    if searchPathFolders.count >= 3 do (
+                        local folderCat = searchPathFolders[3]
                         for d in database do ( if (d.catName == folderCat) or ((d.catName + "s") == folderCat) do ( 
                             cbx_cat.Text = d.catName; 
                             local subs = #()
@@ -1057,25 +1049,10 @@ macroScript Iconia_FileChecker
                         ) )
                     )
                     if searchPathFolders.count >= 4 do (
-						local folderSub = resolveFolderAlias searchPathFolders[4]
-						local currentSubs = #()
-						if cbx_cat.Text != "" then (
-							for d in database do (
-								if (stricmp d.catName cbx_cat.Text == 0) do (
-									for s in d.subcats do append currentSubs s
-								)
-							)
-						) else (
-							for d in database do join currentSubs d.subcats
-						)
-						if currentSubs != undefined and currentSubs.count > 0 do (
-							for s in currentSubs do (
-								if (stricmp folderSub s == 0) or (stricmp folderSub (s+"s") == 0) or (matchPattern folderSub pattern:(s+"*") ignoreCase:true) do (
-									cbx_subcat.Text = s; exit
-								)
-							)
-						)
-					)
+                        local folderSub = searchPathFolders[4]; local currentSubs = #()
+                        if cbx_cat.Text != "" then ( for d in database do if d.catName == cbx_cat.Text do currentSubs = d.subcats ) else ( for d in database do join currentSubs d.subcats )
+                        for s in currentSubs do ( if (folderSub == s) or (folderSub == (s+"s")) or (matchPattern folderSub pattern:(s+"*")) do ( cbx_subcat.Text = s; exit ) )
+                    )
                     if searchPathFolders.count >= 3 and (stricmp searchPathFolders[3] "BRANDS" == 0) do ( for f in kFields do ( if f.Text == "" do ( f.Text = "Brands"; exit ) ) )
                     if searchPathFolders.count >= 3 and (stricmp searchPathFolders[3] "dimensiva" == 0) do ( for f in kFields do ( if f.Text == "" do ( f.Text = "Dimensiva"; exit ) ) )
                 )
@@ -1320,7 +1297,7 @@ macroScript Iconia_FileChecker
         on cbx_cat SelectedIndexChanged s e do (
             local subs = #()
             for d in database do (
-                if (stricmp d.catName s.Text) == 0 do (
+                if d.catName == s.Text do (
                     for c in d.subcats do append subs c
                     sort subs
                     exit
@@ -1338,74 +1315,41 @@ macroScript Iconia_FileChecker
             )
         )
         
-        fn doSaveOkFile silent:false = (
-			if cbx_cat.Text == "" then (
-				messageBox "⚠ Please select a Category before saving." title:"Save OK File"
-				return false
-			)
-			if cbx_subcat.Text == "" then (
-				messageBox "⚠ Please select a Subcategory before saving." title:"Save OK File"
-				return false
-			)
-			
-			local txt_filename = (maxFilePath+maxFileName+"_CHECKED_OK.txt")
-			local txt_file = createfile txt_filename
-			format ("-"+(cbx_cat.Text)+"\n") to:txt_file
-			format ("--"+(cbx_subcat.Text)+"\n") to:txt_file
-			local kFields = #(cbx_k1, cbx_k2, cbx_k3, cbx_k4, cbx_k5, cbx_k6, cbx_k7, cbx_k8, cbx_k9, cbx_k10, cbx_k11, cbx_k12, cbx_k13, cbx_k14, cbx_k15)
-			for f in kFields do ( if f.Text != "" do format (f.Text + "\n") to:txt_file )
-			format (sysInfo.username as string) to:txt_file
-			close txt_file
-			stepStates[9] = 1; updateChecklistUI()
-			if not silent do messageBox "OK File Generated!" title:"Done"
-			return true
-		)
-
-		on btn_done_s9 pressed do ( doSaveOkFile silent:false )
+        on btn_done_s9 pressed do (
+            local txt_filename = (maxFilePath+maxFileName+"_CHECKED_OK.txt")
+            local txt_file = createfile txt_filename
+            if cbx_cat.Text != "" then format ("-"+(cbx_cat.Text)+"\n") to:txt_file else format ("-.None\n") to:txt_file
+            if cbx_subcat.Text != "" then format ("--"+(cbx_subcat.Text)+"\n") to:txt_file
+            local kFields = #(cbx_k1, cbx_k2, cbx_k3, cbx_k4, cbx_k5, cbx_k6, cbx_k7, cbx_k8, cbx_k9, cbx_k10, cbx_k11, cbx_k12, cbx_k13, cbx_k14, cbx_k15)
+            for f in kFields do ( if f.Text != "" do format (f.Text + "\n") to:txt_file )
+            format (sysInfo.username as string) to:txt_file
+            close txt_file
+            stepStates[9] = 1; updateChecklistUI()
+            messageBox "OK File Generated!" title:"Done"
+        )
         
         on btn_final_validate_s9 pressed do (
-			-- Sauvegarde du OK file (avec validation cat/subcat intégrée)
-			local saved = doSaveOkFile silent:true
-			if not saved do return false
-			
-			-- Sauvegarde automatique de la scène max
-			if maxFilePath != "" do saveMaxFile (maxFilePath + maxFileName) quiet:true
-			
-			-- Validation de la présence de l'image
-			local imgfolder = maxFilePath
-			local imgbaseName = getFilenameFile maxFileName
-			local imgextensions = #(".jpg", ".jpeg", ".png", ".bmp")
-			local hasImg = false
-			for ext in imgextensions where not hasImg do ( if doesFileExist (imgfolder + imgbaseName + ext) do hasImg = true )
-			
-			if not hasImg then (
-				messageBox "⚠ Validation finale impossible !\n\nL'image de preview est introuvable.\nVeuillez vérifier qu'elle est bien présente." title:"Validation Finale"
-			) else (
-				local res = yesNoCancelBox "Le fichier a été enregistré et vérifié avec succès !\n\nVoulez-vous fermer 3ds Max ?\n\nOui = Fermer 3ds Max\nNon = Laisser ouvert" title:"Validation Finale"
-				if res == #yes then (
-					quitMax #noPrompt
-				) else (
-					-- LOAD FOLDER ALIASES CSV
-					local aliasCsvPath = "L:\\0-Documentation\\3DS Max Configuration\\3DS Max Plugins\\Antoine\\API\\MaxStack-MaxStack_FileChecker_FolderAliases.csv"
-					local folderAliases = #()  -- array de paires #(rawFolder, resolvedName)
-					if doesFileExist aliasCsvPath do (
-						local fAlias = openFile aliasCsvPath
-						while not eof fAlias do (
-							local parts = filterString (readLine fAlias) ";"
-							if parts.count >= 2 do (
-								local raw      = trimLeft (trimRight parts[1])
-								local resolved = trimLeft (trimRight parts[2])
-								if raw != "" and resolved != "" do append folderAliases #(raw, resolved)
-							)
-						)
-						close fAlias
-					)
-
-					-- Ferme le Splash et ouvre la fenêtre principale
-					try(DestroyDialog rlMasterChecker) catch()
-				)
-			)
-		)
+            -- Sauvegarde automatique de la scène max d'abord
+            if maxFilePath != "" do saveMaxFile (maxFilePath + maxFileName) quiet:true
+            
+            -- Validation de la présence du fichier texte
+            local okFile = maxFilePath + maxFileName + "_CHECKED_OK.txt"
+            local hasOkFile = doesFileExist okFile
+            
+            -- Validation de la présence de l'image
+            local imgfolder = maxFilePath
+            local imgbaseName = getFilenameFile maxFileName
+            local imgextensions = #(".jpg", ".jpeg", ".png", ".bmp")
+            local hasImg = false
+            for ext in imgextensions where not hasImg do ( if doesFileExist (imgfolder + imgbaseName + ext) do hasImg = true )
+            
+            if not hasOkFile or not hasImg then (
+                messageBox "⚠ Avertissement : Validation finale impossible !\n\nSoit le fichier _CHECKED_OK.txt n'a pas été créé, soit l'image de preview est introuvable.\nVeuillez vérifier que l'image et le fichier texte sont bien présents." title:"Validation Finale"
+            ) else (
+                local res = yesNoCancelBox "Le fichier a été enregistré et vérifié avec succès !\n\nVoulez-vous fermer 3ds Max ?\n\nOui = Fermer 3ds Max\nNon = Laisser ouvert" title:"Validation Finale"
+                if res == #yes do quitMax #noPrompt
+            )
+        )
     )
 
     -- Le script démarre par l'ouverture du Splash Screen qui, une fois fini, ouvrira rlMasterChecker
