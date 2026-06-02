@@ -3,7 +3,7 @@
 Script Name: Iconia_SaveArchiveSelection
 Category: Iconia
 Description: Sauvegarde la sélection dans le dossier 1_Archive du projet avec 
-             une capture d'écran.             
+             une capture d'écran. Utilise l'inversion de sélection pour isoler.
 ================================================================================
 */
 macroScript Iconia_SaveArchiveSelection
@@ -15,7 +15,6 @@ tooltip:"Save selection in 1_Archive with timestamp and preview"
     -- HELPER FUNCTIONS
     -- =============================================
 
-    -- Strips known date prefixes (YY_ or YYYY_) from filename
     fn stripDatePrefix fname = (
         local c2 = substring fname 1 2
         local c4 = substring fname 1 4
@@ -23,15 +22,14 @@ tooltip:"Save selection in 1_Archive with timestamp and preview"
         local validYYYY = #("2022","2023","2024","2025","2026")
 
         if (findItem validYYYY c4 > 0) and (substring fname 9 1 == "_") then
-            return (substring fname 9 fname.count)  -- strip "2026MMDD_"
+            return (substring fname 9 fname.count)
 
         if (findItem validYY c2 > 0) and (substring fname 7 1 == "_") then
-            return (substring fname 7 fname.count)  -- strip "YYMMDD_"
+            return (substring fname 7 fname.count)
 
-        return fname  -- no prefix found
+        return fname
     )
 
-    -- Returns a timestamp string: YYYYMMDDHHmm
     fn getTimestamp = (
         local d = getLocalTime()
         local yyyy = d[1] as string
@@ -42,7 +40,6 @@ tooltip:"Save selection in 1_Archive with timestamp and preview"
         return (yyyy + mm + dd + hh + mn)
     )
 
-    -- Removes illegal Windows filename characters
     fn sanitizeFilename str = (
         local illegal = #("\\", "/", ":", "*", "?", "\"", "<", ">", "|")
         local result = str
@@ -59,27 +56,45 @@ tooltip:"Save selection in 1_Archive with timestamp and preview"
         return false
     )
 
-    local selectedObjects = selection as array
+    local originalSelection = selection as array
     local archiveDir      = maxFilePath + "1_Archive\\"
     local cleanName       = stripDatePrefix maxFileName
     local timestamp       = getTimestamp()
     local baseName        = substituteString (timestamp + cleanName) ".max" "_"
     local archiveBasePath = archiveDir + baseName
 
-    -- Build the suggested name from first selected object
     local suggestedName = try (
-        selectedObjects[1].layer.name + "_" + selectedObjects[1].name
+        originalSelection[1].layer.name + "_" + originalSelection[1].name
     ) catch (
-        selectedObjects[1].name
+        originalSelection[1].name
     )
 
-    -- Ensure archive folder exists
     HiddenDosCommand ("mkdir \"" + archiveDir + "\" 2>nul")
 
-    -- Prepare viewport: isolate, maximize, set persp
-    IsolateSelection.EnterIsolateSelectionMode()
-    if viewport.numViews >= 2 then max tool maximize
+    -- =============================================
+    -- DISPLAY STATE & ISOLATION LOGIC
+    -- =============================================
+    
+    -- 1. Inverser la sélection
+    max select invert
+    local invertedSelection = selection as array
+    
+    local tempSetName = "_TempArchiveHidden_"
+    local needsRestore = false
 
+    -- 2. Créer le set temporaire uniquement s'il y a des objets à masquer 
+    -- (gère le cas où la sélection d'origine est déjà isolée ou seule)
+    if invertedSelection.count > 0 then (
+        selectionSets[tempSetName] = invertedSelection
+        hide selectionSets[tempSetName]
+        needsRestore = true
+    )
+
+    -- 3. Réinverser (récupérer la sélection de base)
+    select originalSelection
+    
+    -- Préparation du Viewport
+    if viewport.numViews >= 2 then max tool maximize
     local savedViewportState = #(viewport.getType(), viewport.GetRenderLevel())
     max vpt persp user
     viewport.SetRenderLevel #smoothhighlights
@@ -99,11 +114,21 @@ tooltip:"Save selection in 1_Archive with timestamp and preview"
         button   btnOK "Save" height:22 width:120 align:#center offset:[0,8]
 
         fn restoreViewport = (
-            max select all
+            -- Restaurer le format du viewport
             if viewport.numViews >= 2 then max tool maximize
             viewport.setType      savedViewportState[1]
             viewport.SetRenderLevel savedViewportState[2]
-            IsolateSelection.ExitIsolateSelectionMode()
+            
+            -- Restaurer l'affichage via le set temporaire
+            if needsRestore then (
+                try (
+                    unhide selectionSets[tempSetName]
+                    deleteItem selectionSets tempSetName
+                ) catch()
+            )
+            
+            -- Restaurer la sélection initiale
+            select originalSelection
         )
 
         on btnOK pressed do (
@@ -111,10 +136,10 @@ tooltip:"Save selection in 1_Archive with timestamp and preview"
             local savePath    = archiveBasePath + safeName + ".max"
             local previewPath = archiveBasePath + safeName + ".jpg"
 
-            -- Save nodes
-            saveNodes selectedObjects savePath
+            -- Sauvegarde (utilise originalSelection pour garantir qu'on exporte les bons objets)
+            saveNodes originalSelection savePath
 
-            -- Save viewport preview
+            -- Capture d'écran
             local bmp = gw.getViewportDib()
             if bmp != undefined then (
                 bmp.filename = previewPath
@@ -125,6 +150,9 @@ tooltip:"Save selection in 1_Archive with timestamp and preview"
             )
 
             destroyDialog ArchiveSaveAsSelection
+        )
+        
+        on ArchiveSaveAsSelection close do (
             restoreViewport()
         )
     )
