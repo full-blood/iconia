@@ -25,9 +25,9 @@
 
         local menuMgr = maxops.GetICuiMenuMgr()
         menuMgr.LoadConfiguration(menuMgr.GetCurrentConfiguration())
-        print "MaxStack menu loaded..."
+        print "Iconia menu loaded..."
     ) catch (
-        format "MaxStack Loader Error (Menu) : %\n" (getCurrentException())
+        format "Iconia Loader Error (Menu) : %\n" (getCurrentException())
     )
 
     -- --------------------------------------------------
@@ -51,13 +51,13 @@
 
     -- Config GitHub
     local githubUser    = "full-blood"
-    local githubRepo    = "maxstack"
+    local githubRepo    = "iconia"
     local branch        = "main"
     local baseRawURL    = "https://raw.githubusercontent.com/" + githubUser + "/" + githubRepo + "/" + branch + "/"
     local releasesURL   = "https://github.com/" + githubUser + "/" + githubRepo + "/releases/latest"
 
     -- Version locale
-    local root        = (getDir #userScripts) + "\\MaxStack"
+    local root        = (getDir #userScripts) + "\\Iconia"
     local versionFile = root + "\\version.txt"
     local localVer    = "0.0.0"
 
@@ -81,15 +81,15 @@
 
         -- Si on trouve une mise a jour, on propose a l'utilisateur
         if (remoteVer != "") and (isNewerVersion remoteVer localVer) then (
-            local msg = "Une nouvelle version de MaxStack (v" + remoteVer + ") est disponible !\n(Version actuelle : " + localVer + ")\n\nVoulez-vous la telecharger et l'installer maintenant ?"
+            local msg = "Une nouvelle version du menu Iconia (v" + remoteVer + ") est disponible !\n(Version actuelle : " + localVer + ")\n\nVoulez-vous la telecharger et l'installer maintenant ?"
             
             -- queryBox pose la question. Si l'utilisateur clique "Oui", ca lance l'update.
-            if (queryBox msg title:"Mise a jour MaxStack" beep:true) then (
-                print "Telechargement de la mise a jour MaxStack..."
+            if (queryBox msg title:"Mise a jour Iconia" beep:true) then (
+                print "Telechargement de la mise a jour menu Iconia..."
                 
                 local tempDir  = getDir #temp
-                local mzpPath  = tempDir + "\\MaxStack_update.mzp"
-                local mzpURL = "https://github.com/" + githubUser + "/" + githubRepo + "/releases/latest/download/MaxStack.mzp"
+                local mzpPath  = tempDir + "\\Iconia_update.mzp"
+                local mzpURL = "https://github.com/" + githubUser + "/" + githubRepo + "/releases/latest/download/Iconia.mzp"
                 
                 http.DownloadFile mzpURL mzpPath
 
@@ -97,7 +97,7 @@
                     fileIn mzpPath
                     -- Le message de succes du fileIn prendra le relais
                 ) else (
-                    messageBox "Echec du telechargement.\nVous pouvez mettre a jour manuellement via le menu 'A propos'." title:"Erreur MaxStack"
+                    messageBox "Echec du telechargement.\nVous pouvez mettre a jour manuellement via le menu 'A propos'." title:"Erreur menu Iconia"
                 )
             )
         )
