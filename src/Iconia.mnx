@@ -15,4 +15,6 @@
     <CreateMenu ParentId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" MenuId="9f9e31dd-a13b-4995-b567-5a4758ff97e5" Title="Archives" BeforeId="6d23fd14-a231-4718-bf45-2a8bc1556f44"/>
     <MoveItem DestinationId="9f9e31dd-a13b-4995-b567-5a4758ff97e5" ItemId="6d23fd14-a231-4718-bf45-2a8bc1556f44"/>
     <MoveItem DestinationId="9f9e31dd-a13b-4995-b567-5a4758ff97e5" ItemId="fde0dd5e-efdb-46ee-83c4-d26c310b09ff"/>
+    <CreateMenuAction MenuId="9f9e31dd-a13b-4995-b567-5a4758ff97e5" Id="47ebf5c9-f54d-4049-b9c5-74d4d4e9b0c9" ActionId="647394-Iconia_AddToArchive`Iconia" BeforeId="fde0dd5e-efdb-46ee-83c4-d26c310b09ff"/>
+    <MoveItem DestinationId="9f9e31dd-a13b-4995-b567-5a4758ff97e5" ItemId="47ebf5c9-f54d-4049-b9c5-74d4d4e9b0c9"/>
 </MaxMenuTransformations>
