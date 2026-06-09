@@ -117,7 +117,7 @@ macroScript Iconia_About category:"Iconia" tooltip:"About"
             if doesFileExist mzpPath then (
                 -- fileIn lance l'installation de façon plus fiable que installPkg
                 fileIn mzpPath
-                messageBox ("Iconia mis à jour vers v" + remoteVer + ".\nRelancez 3ds Max pour appliquer.") title:"Iconia Update"
+                messageBox ("Iconia mis à jour vers v" + remoteVer + ".\nSi le menu n'est pas à jour, relancez 3ds Max pour appliquer.") title:"Iconia Update"
             ) else (
                 messageBox "Téléchargement échoué. Essayez manuellement :\n" + releasesURL title:"Erreur"
             )

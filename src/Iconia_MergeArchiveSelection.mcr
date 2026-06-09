@@ -72,12 +72,12 @@ rollout ArchiveBrowser "Browser d'Archives" width:920 height:1000
             )
 
             local imgClass = dotNetClass "System.Drawing.Image"
-            local fileMode = dotNetClass "System.IO.FileMode"
 
-            for f in jpgFiles do
+            for i = jpgFiles.count to 1 by -1 do
             (
-                -- Chargement via FileStream pour ne pas lock le fichier sur le disque
-                local fs = dotNetObject "System.IO.FileStream" f fileMode.Open
+                local f = jpgFiles[i]
+                -- Chargement via File.OpenRead pour eviter le probleme de constructeur FileStream
+                local fs = (dotNetClass "System.IO.File").OpenRead f
                 local loadedImg = imgClass.FromStream fs
                 fs.Close()
 

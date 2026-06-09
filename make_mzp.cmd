@@ -14,6 +14,20 @@ set count=1
 :: --- Create output folder if needed ---
 if not exist "%outdir%" mkdir "%outdir%"
 
+:: --- Copie Iconia.mnx depuis 3ds Max vers src ---
+set "mnxsrc=C:\Users\%USERNAME%\Autodesk\3ds Max 2026\User Settings\Iconia.mnx"
+set "mnxdst=%srcdir%\Iconia.mnx"
+
+if exist "%mnxsrc%" (
+    copy /Y "%mnxsrc%" "%mnxdst%" >nul
+    echo Iconia.mnx copie depuis 3ds Max vers src.
+) else (
+    echo AVERTISSEMENT : Iconia.mnx introuvable dans 3ds Max User Settings.
+    echo Chemin verifie : %mnxsrc%
+    echo Le build continue avec l'ancienne version si elle existe.
+)
+echo.
+
 :: --- Lecture et Auto-Increment de la version ---
 set "versionfile=%repodir%version.txt"
 if not exist "%versionfile%" (
