@@ -3,7 +3,7 @@
 Script Name: Iconia_SaveArchiveSelection
 Category: Iconia
 Description: Sauvegarde la sélection dans le dossier 1_Archive du projet avec 
-             une capture d'écran. Utilise l'inversion de sélection pour isoler.
+             une capture d'écran.
 ================================================================================
 */
 macroScript Iconia_SaveArchiveSelection

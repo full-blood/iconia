@@ -17,4 +17,5 @@
     <MoveItem DestinationId="9f9e31dd-a13b-4995-b567-5a4758ff97e5" ItemId="fde0dd5e-efdb-46ee-83c4-d26c310b09ff"/>
     <CreateMenuAction MenuId="9f9e31dd-a13b-4995-b567-5a4758ff97e5" Id="47ebf5c9-f54d-4049-b9c5-74d4d4e9b0c9" ActionId="647394-Iconia_AddToArchive`Iconia" BeforeId="fde0dd5e-efdb-46ee-83c4-d26c310b09ff"/>
     <MoveItem DestinationId="9f9e31dd-a13b-4995-b567-5a4758ff97e5" ItemId="47ebf5c9-f54d-4049-b9c5-74d4d4e9b0c9"/>
+    <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="4cd355f7-83d6-43b9-9fba-596e0619fe9f" ActionId="647394-Iconia_TemplateLayer`Iconia" BeforeId="e58725ef-0dd6-4f9d-b164-2f9eb5aad3ef"/>
 </MaxMenuTransformations>

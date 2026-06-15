@@ -219,6 +219,7 @@ git push
 echo.
 echo Creation de la Release GitHub v%currentver%...
 gh release create "v%currentver%" "Iconia.mzp" --title "Mise a jour %currentver%" --generate-notes
+pause
 
 popd
 
