@@ -8,7 +8,7 @@ Description: Add usual layers
 
 macroScript Iconia_TemplateLayer
 category:"Iconia"
-buttonText:"Template Layers"
+buttonText:"Layers template"
 tooltip:"Add usual layers"
 (
 	try(destroyDialog rIconiaLayers)catch()
@@ -90,8 +90,8 @@ tooltip:"Add usual layers"
 
 		group "Scene"
 		(
-			button btn_addSelected "Add Selected to Layer" width:290
-			button btn_addAll "Add All to Layers" width:290
+			button btn_addSelected "Add Selected" width:290
+			button btn_addAll "Add All" width:290
 		)
 
 		------------------------------------------------------------------
