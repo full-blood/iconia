@@ -160,7 +160,7 @@ macroScript Iconia_FileChecker
         local updateChecklistUI, hideAllUI, showCurrentStepUI, switchStep
         local doCheckCorona, completeStep1, doCleanReset, checkSceneMaterials, collectMaterials
         local doCheckFilename, cleanMaxFileName, doRenameOnDisk, completeStep2
-        local collectAllBitmaps, checkBitmapStatus, relinkBitmaps, doStep3_Scan, doStep3_Relink, completeStep3
+        local collectAllBitmaps, checkBitmapStatus, relinkBitmaps, getLocalMapsFolder, getUniqueLocalFile, copyOutsideMapsToLocal, doStep3_Scan, doStep3_Relink, completeStep3
         local rPivot, rGrpPivot, hasDiffScale
         local wColor, listAllLayers
         local getPrefix, updateNameList, renameItemFromList
@@ -212,6 +212,7 @@ macroScript Iconia_FileChecker
         checkbox chk_fixOutside_s3 "Relink 'Outside' maps to local folder if found" pos:[180,270] checked:true visible:false
         
         button btn_force_s3 "Open Asset Tracking" pos:[190,515] width:120 height:60 enabled:false visible:false
+        button btn_copy_local_s3 "COPY MAPS\nTO LOCAL" pos:[343,515] width:120 height:60 enabled:false visible:false
         button btn_recheck_s3 "RECHECK" pos:[343,515] width:120 height:60 visible:false
         button btn_remove_missing_s3 "REMOVE MISSING" pos:[496,515] width:120 height:60 visible:false
         button btn_main_s3 "CHECK MAPS" pos:[496,515] width:120 height:60 align:#center visible:false
@@ -341,7 +342,7 @@ macroScript Iconia_FileChecker
             local allCtrls = #(
                 lst_log_s1, btn_main_s1, btn_converter_s1, btn_done_s1, btn_recheck_s1,
                 lst_log_s2, lbl_prev_title_s2, edt_before_s2, lbl_arrow_s2, edt_after_s2, btn_main_s2, btn_confirm_s2,
-                lst_log_s3, chk_fixOutside_s3, btn_force_s3, btn_main_s3, btn_remove_missing_s3, btn_recheck_s3, btn_done_s3,
+                lst_log_s3, chk_fixOutside_s3, btn_force_s3, btn_copy_local_s3, btn_main_s3, btn_remove_missing_s3, btn_recheck_s3, btn_done_s3,
                 lst_log_s4, btn_piv_each_s4, btn_piv_grp_s4, btn_done_s4,
                 lst_log_s5, btn_wire_s5, btn_done_s5,
                 lst_log_s6, btn_lay_fix_s6, btn_done_s6,
@@ -367,7 +368,11 @@ macroScript Iconia_FileChecker
                 
                 if step3_state == 2 do (
                     btn_main_s3.visible = true
-                    if wrongLocationMaps > 0 do chk_fixOutside_s3.visible = true
+                    if wrongLocationMaps > 0 do (
+                        chk_fixOutside_s3.visible = true
+                        btn_copy_local_s3.visible = true
+                        btn_copy_local_s3.enabled = true
+                    )
                 )
                 if step3_state == 3 do ( -- Manquants après relink
                     btn_remove_missing_s3.visible = true
@@ -758,6 +763,120 @@ macroScript Iconia_FileChecker
             )
             atsops.refresh()
             return #(fixedCount, missingCount)
+        )
+
+        fn getLocalMapsFolder =
+        (
+            local scenePath = maxFilePath
+            if scenePath == "" then return ""
+
+            local Directory = dotNetClass "System.IO.Directory"
+            local subFolders = #("maps","Maps","map","Map","textures","Textures","texture","Texture")
+            for sub in subFolders do (
+                local testFolder = scenePath + sub + "\\"
+                if Directory.Exists testFolder do return testFolder
+            )
+
+            local newFolder = scenePath + "maps\\"
+            if not (Directory.Exists newFolder) do Directory.CreateDirectory newFolder
+            if Directory.Exists newFolder then newFolder else scenePath
+        )
+
+        fn getUniqueLocalFile basePath =
+        (
+            if not (doesFileExist basePath) then return basePath
+
+            local folder = getFilenamePath basePath
+            local baseName = getFilenameFile basePath
+            local ext = getFilenameType basePath
+            local idx = 1
+            local testPath = folder + baseName + "_" + (idx as string) + ext
+
+            while doesFileExist testPath do (
+                idx += 1
+                testPath = folder + baseName + "_" + (idx as string) + ext
+            )
+            return testPath
+        )
+
+        fn copyOutsideMapsToLocal =
+        (
+            local scenePath = maxFilePath
+            if scenePath == "" then (
+                messageBox "Veuillez d'abord sauvegarder votre scene (.max)." title:"MaxStack - Copy Maps"
+                return false
+            )
+
+            local targetFolder = getLocalMapsFolder()
+            if targetFolder == "" then (
+                messageBox "Impossible de trouver ou creer un dossier maps/textures local." title:"MaxStack - Copy Maps"
+                return false
+            )
+
+            collectAllBitmaps()
+
+            local copiedCount = 0
+            local reusedCount = 0
+            local failedCount = 0
+            local copiedSources = #()
+            local copiedTargets = #()
+            local logLines = #()
+            local sceneLow = toLower scenePath
+
+            append logLines ("Copy maps to local folder:")
+            append logLines targetFolder
+            append logLines ""
+
+            for b in bitmapList do (
+                local fname = ""
+                try( fname = b.filename )catch()
+
+                if fname != undefined and fname != "" and (pathConfig.isAbsolutePath fname) and (doesFileExist fname) then (
+                    local fLow = toLower fname
+                    local isOutside = ((findString fLow sceneLow) == undefined)
+
+                    if isOutside then (
+                        local existingIdx = 0
+                        for i = 1 to copiedSources.count where (stricmp copiedSources[i] fname == 0) do (
+                            existingIdx = i
+                            exit
+                        )
+
+                        local destPath = ""
+                        if existingIdx > 0 then (
+                            destPath = copiedTargets[existingIdx]
+                            reusedCount += 1
+                        ) else (
+                            destPath = targetFolder + (filenameFromPath fname)
+                            if doesFileExist destPath then destPath = getUniqueLocalFile destPath
+
+                            if copyFile fname destPath then (
+                                append copiedSources fname
+                                append copiedTargets destPath
+                                copiedCount += 1
+                                append logLines ("  copied: " + (filenameFromPath fname))
+                            ) else (
+                                failedCount += 1
+                                append logLines ("  failed: " + (filenameFromPath fname))
+                                destPath = ""
+                            )
+                        )
+
+                        if destPath != "" do try( b.filename = destPath )catch()
+                    )
+                )
+            )
+
+            atsops.refresh()
+
+            append logLines ""
+            append logLines ("Copied             : " + copiedCount as string)
+            append logLines ("Reused duplicates  : " + reusedCount as string)
+            append logLines ("Failed             : " + failedCount as string)
+            lst_log_s3.items = logLines
+
+            doStep3_Scan()
+            return (failedCount == 0)
         )
 
         fn doStep3_Scan =
@@ -1231,6 +1350,7 @@ macroScript Iconia_FileChecker
             else if step3_state == 2 then doStep3_Relink()
         )
         on btn_force_s3 pressed do ( ATSOps.visible = true; atsops.refresh() )
+        on btn_copy_local_s3 pressed do ( undo "Copy Maps To Local" on copyOutsideMapsToLocal() )
         
         on btn_remove_missing_s3 pressed do (
             undo "Remove Missing Maps" on (
