@@ -1513,28 +1513,6 @@ macroScript Iconia_FileChecker
 
 		on btn_done_s9 pressed do ( doSaveOkFile silent:false )
         
-		fn jsonEscapeString s = (
-			local r = s as string
-			r = substituteString r "\\" "\\\\"
-			r = substituteString r "\"" "\\\""
-			return r
-		)
-
-		fn notifyLibraryAddAsset txtPath = (
-			try (
-				local http = dotNetObject "System.Net.WebClient"
-				http.Headers.Add "Content-Type" "application/json"
-				http.Headers.Add "User-Agent" "MaxScript"
-				local body = "{\"token\":\"RENDER_TEAM_2024\",\"txt_path\":\"" + (jsonEscapeString txtPath) + "\"}"
-				local response = http.UploadString "http://10.13.54.151:8000/library/add-asset" "POST" body
-				format "Iconia Library add-asset launched: %\n" response
-				return true
-			) catch (
-				format "Iconia Library add-asset failed for % : %\n" txtPath (getCurrentException())
-				return false
-			)
-		)
-
         on btn_final_validate_s9 pressed do (
 			-- Sauvegarde du OK file (avec validation cat/subcat intégrée)
 			local saved = doSaveOkFile silent:true
@@ -1553,10 +1531,6 @@ macroScript Iconia_FileChecker
 			if not hasImg then (
 				messageBox "⚠ Validation finale impossible !\n\nL'image de preview est introuvable.\nVeuillez vérifier qu'elle est bien présente." title:"Validation Finale"
 			) else (
-				-- Ajout rapide dans la bibliothèque SQLite + régénération HTML sans scan complet
-				local txt_filename = (maxFilePath+maxFileName+"_CHECKED_OK.txt")
-				notifyLibraryAddAsset txt_filename
-				
 				local res = yesNoCancelBox "Le fichier a été enregistré et vérifié avec succès !\n\nVoulez-vous fermer 3ds Max ?\n\nOui = Fermer 3ds Max\nNon = Laisser ouvert" title:"Validation Finale"
 				if res == #yes then (
 					quitMax #noPrompt
