@@ -105,6 +105,16 @@ rollout ArchiveBrowser "Browser d'Archives" width:920 height:1000
             messageBox "Impossible de trouver le sous-dossier 'Archive' dans le répertoire courant." title:"Dossier introuvable"
         )
     )
+	on ArchiveBrowser close do
+	(
+		for c in flp.Controls do
+		(
+			try(dotNet.removeEventHandler c "Click" onThumbnailClicked)catch()
+			try(if c.Image != undefined do c.Image.Dispose())catch()
+			try(c.Dispose())catch()
+		)
+		flp.Controls.Clear()
+	)
 )
 
 createDialog ArchiveBrowser

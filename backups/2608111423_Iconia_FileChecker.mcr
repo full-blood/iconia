@@ -1673,19 +1673,15 @@ macroScript Iconia_FileChecker
             local imagePath = undefined
             for ext in imgextensions do ( if doesFileExist (imgfolder + imgbaseName + ext) do imagePath = (imgfolder + imgbaseName + ext) )
             
-            -- L'étape Preview est la précondition : pas de seconde alerte redondante ici.
-            if imagePath == undefined then return #()
+            if imagePath == undefined then ( messageBox "No matching image found (jpg/png) for AI."; return #() )
             
             local pythonExe = "C:\\Users\\" + sysInfo.username + "\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe"
             local scriptDir = "C:\\Users\\" + sysInfo.username + "\\Documents\\3ds Max 2024\\Scripts\\"
-            local apiDir = "L:\\0-Documentation\\3DS Max Configuration\\3DS Max Plugins\\Antoine\\API\\"
             local pythonScript = scriptDir + "_MyTools_Files_MapSearch.py"
-            local keywordsFile = apiDir + "MaxStack-MaxStack_FileChecker_Keywords_List.txt"
+            local keywordsFile = scriptDir + "MaxStack-MaxStack_FileChecker_Keywords_List.txt"
             local tempFile = getDir #temp + "\\object_list.txt"
             
             if not (doesFileExist pythonExe) then ( messageBox "Python introuvable"; return #() )
-            if not (doesFileExist pythonScript) then ( messageBox ("Script AI introuvable :\n" + pythonScript) title:"AI Search"; return #() )
-            if not (doesFileExist keywordsFile) then ( messageBox ("Bibliothèque de mots-clés introuvable :\n" + keywordsFile) title:"AI Search"; return #() )
             if doesFileExist tempFile then deleteFile tempFile
             
             local args = "/c \"\"" + pythonExe + "\" \"" + pythonScript + "\" \"" + imagePath + "\" \"" + tempFile + "\" \"" + keywordsFile + "\"\""
@@ -1694,26 +1690,8 @@ macroScript Iconia_FileChecker
             p.Start(); p.WaitForExit()
             
             local keywordsFound = #()
-            if doesFileExist tempFile then (
-                local f = openFile tempFile
-                local outputLines = #()
-                while not eof f do append outputLines (readLine f)
-                close f
-                if outputLines.count > 0 and outputLines[1] == "__AI_SEARCH_ERROR__" then (
-                    local errorText = ""
-                    for i = 2 to outputLines.count do errorText += outputLines[i] + "\n"
-                    messageBox errorText title:"AI Search — modèles indisponibles"
-                    return #()
-                )
-                for line in outputLines do (
-                    local cleanLine = trimLeft (trimRight line)
-                    if cleanLine != "" do append keywordsFound cleanLine
-                )
-                return keywordsFound
-            ) else (
-                messageBox "AI Search n'a créé aucun résultat." title:"AI Search"
-                return #()
-            )
+            if doesFileExist tempFile then ( local f = openFile tempFile; while not eof f do ( local line = readLine f; if (trimLeft (trimRight line)) != "" then append keywordsFound line ); close f; return keywordsFound )
+            else ( messageBox "Erreur AI"; return #() )
         )
 
         fn initStep9Keywords = (

@@ -159,12 +159,8 @@ macroScript Iconia_FileChecker
     (
         local updateChecklistUI, hideAllUI, showCurrentStepUI, switchStep
         local doCheckCorona, completeStep1, doCleanReset, checkSceneMaterials, collectMaterials
-        local getSystemUnitCentimeters, normalizeSceneUnitsToCentimeters
-        local isPluginCleanupCandidate, collectMissingPluginItems, promptMissingPlugins, runPruneOptions, validateCleanScene
-        local removeCamerasForAsset, removeXRefsForAsset, removeEmptyOrMissingObjects, removeParticleViewObjects
-        local removeAnimationKeysForAsset, removeAnimationLayersForAsset, removeMissingCoronaAssets, removeRootCustomAttributes, removeJunkEffects
         local doCheckFilename, cleanMaxFileName, doRenameOnDisk, completeStep2
-        local collectAllBitmaps, checkBitmapStatus, relinkBitmaps, findMapInProject, moveProjectMapsToCanonicalFolder, getLocalMapsFolder, getUniqueLocalFile, copyOutsideMapsToLocal, doStep3_Scan, doStep3_Relink, completeStep3
+        local collectAllBitmaps, checkBitmapStatus, relinkBitmaps, getLocalMapsFolder, getUniqueLocalFile, copyOutsideMapsToLocal, doStep3_Scan, doStep3_Relink, completeStep3
         local rPivot, rGrpPivot, hasDiffScale
         local wColor, listAllLayers
         local getPrefix, updateNameList, renameItemFromList
@@ -193,24 +189,10 @@ macroScript Iconia_FileChecker
         -- ===========================================================
         label lbl_reload "⏳ Chargement en cours..." pos:[400,300] visible:true
         listBox lst_log_s1 "" pos:[180,20] width:590 height:12 visible:false
-        groupBox grp_prune_s1 "PRUNE / CLEAN OPTIONS" pos:[180,225] width:590 height:205 visible:false
-        checkbox chk_removeCameras_s1 "Remove cameras" pos:[195,250] width:165 checked:true visible:false
-        checkbox chk_removeXRefs_s1 "Remove XRefs" pos:[195,275] width:165 checked:true visible:false
-        checkbox chk_garbage_s1 "Garbage collector" pos:[195,300] width:165 checked:true visible:false
-        checkbox chk_memory_s1 "Clear Undo + bitmap cache" pos:[195,325] width:165 checked:true visible:false
-        checkbox chk_reactor_s1 "Reactor Collision (legacy)" pos:[195,350] width:165 checked:true visible:false
-        checkbox chk_animLayers_s1 "Remove animation layers" pos:[195,375] width:165 checked:true visible:false
-        checkbox chk_missingObjects_s1 "Remove missing / empty objects" pos:[195,400] width:180 checked:true visible:false
-        checkbox chk_animKeys_s1 "Remove all animation keys" pos:[410,250] width:165 checked:true visible:false
-        checkbox chk_particleView_s1 "Remove invalid Particle View" pos:[410,275] width:165 checked:true visible:false
-        checkbox chk_coronaAssets_s1 "Remove missing Corona assets" pos:[410,300] width:180 checked:true visible:false
-        checkbox chk_rootCA_s1 "Remove known Root CAs" pos:[410,325] width:165 checked:true visible:false
-        checkbox chk_missingPlugins_s1 "Check missing plugins" pos:[410,350] width:165 checked:true visible:false
-        checkbox chk_junkEffects_s1 "Remove junk effects" pos:[410,375] width:165 checked:true visible:false
-        button btn_main_s1 "CHECK CORONA\n& CLEAN RESET" pos:[405,455] width:140 height:60 align:#center visible:false
-        button btn_converter_s1 "OPEN CORONA\nCONVERTER" pos:[265,445] width:140 height:60 visible:false
-        button btn_done_s1 "CORONA\nOK ✔" pos:[485,445] width:140 height:60 visible:false
-        button btn_recheck_s1 "RECHECK" pos:[375,510] width:140 height:40 align:#center visible:false
+        button btn_main_s1 "CHECK CORONA\n& CLEAN RESET" pos:[405,400] width:140 height:60 align:#center visible:false
+        button btn_converter_s1 "OPEN CORONA\nCONVERTER" pos:[265,350] width:140 height:60 visible:false
+        button btn_done_s1 "CORONA\nOK ✔" pos:[485,350] width:140 height:60 visible:false
+        button btn_recheck_s1 "RECHECK" pos:[375,450] width:140 height:60 align:#center visible:false
 
         -- ===========================================================
         -- UI ÉTAPE 2 : FILE CHECKER
@@ -248,7 +230,7 @@ macroScript Iconia_FileChecker
         -- UI ÉTAPE 5 : WIRECOLOR
         -- ===========================================================
         listBox lst_log_s5 "" pos:[180,20] width:590 height:12 visible:false
-        button btn_wire_s5 "UNDO WIRECOLOR" pos:[470,515] width:140 height:60 visible:false
+        button btn_wire_s5 "FIX BLACK WIRECOLOR" pos:[470,515] width:140 height:60 visible:false
         button btn_done_s5 "VALIDATE ✔" pos:[630,515] width:140 height:60 visible:false
 
         -- ===========================================================
@@ -277,7 +259,6 @@ macroScript Iconia_FileChecker
         label lbl_n_repl "Replace:" pos:[180,430] width:60 height:16 visible:false
         edittext edt_n_repl "" pos:[240,428] width:200 height:20 visible:false
         button btn_n_replace "Search & Replace" pos:[180,460] width:260 height:30 visible:false
-        button btn_n_replace_cancel "CANCEL" pos:[315,460] width:125 height:30 visible:false
 
         button btn_done_s7 "VALIDATE ✔" pos:[630,515] width:140 height:60 visible:false
 
@@ -328,14 +309,6 @@ macroScript Iconia_FileChecker
         
         local step2_state   = 1
         local cleanedName   = ""
-        local wirecolorBackup = #()
-        local wirecolorAutoProcessed = false
-        local replacePending = false
-        local replacePreviewActive = false
-        local replacePendingSearch = ""
-        local replacePendingReplacement = ""
-        local replacePendingTargets = #()
-        local replacePreviewOriginalNames = #()
 
         local step3_state       = 1
         local bitmapList        = #()
@@ -367,13 +340,13 @@ macroScript Iconia_FileChecker
         fn hideAllUI =
         (
             local allCtrls = #(
-                lst_log_s1, grp_prune_s1, chk_removeCameras_s1, chk_removeXRefs_s1, chk_garbage_s1, chk_memory_s1, chk_reactor_s1, chk_animLayers_s1, chk_missingObjects_s1, chk_animKeys_s1, chk_particleView_s1, chk_coronaAssets_s1, chk_rootCA_s1, chk_missingPlugins_s1, chk_junkEffects_s1, btn_main_s1, btn_converter_s1, btn_done_s1, btn_recheck_s1,
+                lst_log_s1, btn_main_s1, btn_converter_s1, btn_done_s1, btn_recheck_s1,
                 lst_log_s2, lbl_prev_title_s2, edt_before_s2, lbl_arrow_s2, edt_after_s2, btn_main_s2, btn_confirm_s2,
                 lst_log_s3, chk_fixOutside_s3, btn_force_s3, btn_copy_local_s3, btn_main_s3, btn_remove_missing_s3, btn_recheck_s3, btn_done_s3,
                 lst_log_s4, btn_piv_each_s4, btn_piv_grp_s4, btn_done_s4,
                 lst_log_s5, btn_wire_s5, btn_done_s5,
                 lst_log_s6, btn_lay_fix_s6, btn_done_s6,
-                lbl_n_pref, edt_n_pref, lbl_n_base, edt_n_base, btn_n_all, btn_n_grp, btn_n_sel, lbl_n_search, edt_n_search, lbl_n_repl, edt_n_repl, btn_n_replace, btn_n_replace_cancel, btn_done_s7, lst_names_s7,
+                lbl_n_pref, edt_n_pref, lbl_n_base, edt_n_base, btn_n_all, btn_n_grp, btn_n_sel, lbl_n_search, edt_n_search, lbl_n_repl, edt_n_repl, btn_n_replace, btn_done_s7, lst_names_s7,
                 lst_log_s8, btn_prev_fix_s8, btn_done_s8,
                 lbl_cat_s9, cbx_cat, lbl_subcat_s9, cbx_subcat, btn_ai_s9, btn_done_s9, btn_final_validate_s9, lbl_key_s9, cbx_k1, cbx_k2, cbx_k3, cbx_k4, cbx_k5, cbx_k6, cbx_k7, cbx_k8, cbx_k9, cbx_k10, cbx_k11, cbx_k12, cbx_k13, cbx_k14, cbx_k15
             )
@@ -386,10 +359,7 @@ macroScript Iconia_FileChecker
         fn showCurrentStepUI =
         (
             hideAllUI()
-            if currentStep == 1 then (
-                for c in #(lst_log_s1, grp_prune_s1, chk_removeCameras_s1, chk_removeXRefs_s1, chk_garbage_s1, chk_memory_s1, chk_reactor_s1, chk_animLayers_s1, chk_missingObjects_s1, chk_animKeys_s1, chk_particleView_s1, chk_coronaAssets_s1, chk_rootCA_s1, chk_missingPlugins_s1, chk_junkEffects_s1) do c.visible = true
-                if stepStates[1] == 0 then btn_main_s1.visible = true
-            )
+            if currentStep == 1 then ( for c in #(lst_log_s1) do c.visible = true; if stepStates[1] == 0 then btn_main_s1.visible = true )
             else if currentStep == 2 then ( for c in #(lst_log_s2, lbl_prev_title_s2, edt_before_s2, lbl_arrow_s2, edt_after_s2) do c.visible = true; if step2_state == 2 then btn_confirm_s2.visible = true else btn_main_s2.visible = true )
             else if currentStep == 3 then ( 
                 for c in #(lst_log_s3, btn_done_s3) do c.visible = true
@@ -414,19 +384,18 @@ macroScript Iconia_FileChecker
             
             else if currentStep == 5 then ( 
                 lst_log_s5.visible = true
-                btn_done_s5.visible = true
-
-                -- La correction est automatique à la première entrée. Les couleurs d'origine sont
-                -- conservées pour un Undo ciblé, sans annuler d'autres actions ultérieures de l'utilisateur.
-                if not wirecolorAutoProcessed then (
-                    local changedCount = 0
-                    undo "Auto-fix black wirecolor" on changedCount = wColor()
-                    wirecolorAutoProcessed = true
-                    if changedCount > 0 do btn_wire_s5.visible = true
+                btn_done_s5.visible = true -- Affiché immédiatement
+                
+                local hasBlack = false
+                for o in objects where o.wirecolor == (color 0 0 0) do ( hasBlack = true; exit )
+                if hasBlack then (
+                    lst_log_s5.items = #("⚠ Des objets ont un wirecolor noir.", "Cliquez sur le bouton pour corriger.")
+                    btn_wire_s5.visible = true
+                ) else (
+                    lst_log_s5.items = #("✔ Aucun wirecolor noir trouvé.", "Vous pouvez cliquer sur Validate pour continuer.")
                     stepStates[5] = 1
                     updateChecklistUI()
                 )
-                if wirecolorBackup.count > 0 do btn_wire_s5.visible = true
             )
             
             else if currentStep == 6 then ( for c in #(lst_log_s6, btn_lay_fix_s6, btn_done_s6) do c.visible = true )
@@ -447,10 +416,10 @@ macroScript Iconia_FileChecker
                     step9_Initialized = true
                 )
             )
-
-            -- Même si la cascade saute aussi l'étape Layers, la restauration ciblée reste accessible.
-            if currentStep >= 6 and wirecolorBackup.count > 0 do btn_wire_s5.visible = true
         )
+
+        -- ===========================================================
+        -- FONCTIONS ÉTAPE 1 : CORONA & CLEAN RESET
         -- ===========================================================
         fn collectMaterials mat collected = (
             if mat == undefined then return collected
@@ -471,337 +440,38 @@ macroScript Iconia_FileChecker
             local badMats = #()
             for m in mats do (
                 local cStr = classof m as string
-                -- Autorise les matériaux Corona, les Multi/Sub-Object et les matériaux généraux Blend.
-                -- Blend est un matériau général valide : il ne doit pas déclencher l'alerte Corona.
-                if not (matchPattern cStr pattern:"*Corona*") and cStr != "Multimaterial" and cStr != "Multi/Sub-Object" and cStr != "Blend" do (
+                -- Autorise tout ce qui est Corona, ou les Multimatériaux.
+                if not (matchPattern cStr pattern:"*Corona*") and cStr != "Multimaterial" and cStr != "Multi/Sub-Object" do (
                     append badMats m
                 )
             )
             return badMats
         )
 
-        fn getSystemUnitCentimeters unitType = (
-            case unitType of (
-                #millimeters: 0.1
-                #centimeters: 1.0
-                #meters: 100.0
-                #kilometers: 100000.0
-                #inches: 2.54
-                #feet: 30.48
-                #miles: 160934.4
-                default: undefined
-            )
-        )
-
-        fn normalizeSceneUnitsToCentimeters logLines = (
-            local oldType = units.SystemType
-            local oldScale = units.SystemScale
-            local typeInCm = getSystemUnitCentimeters oldType
-            local scaleFactor = undefined
-            append logLines "--- CONTRÔLE DES UNITÉS ---"
-            append logLines ("Unités système source : " + (oldType as string) + " (échelle " + (oldScale as string) + ")")
-
-            if typeInCm == undefined then (
-                append logLines "ERREUR : unité système non prise en charge. Conversion annulée pour protéger l'échelle."
-                return false
-            )
-
-            -- Nombre de centimètres représenté par une unité système source.
-            scaleFactor = typeInCm * oldScale
-            if (abs (scaleFactor - 1.0)) > 0.000001 then (
-                append logLines ("Rescale World Units : facteur " + (scaleFactor as string) + " pour préserver les dimensions réelles.")
-                try(
-                    rescaleWorldUnits scaleFactor
-                )catch(
-                    append logLines "ERREUR : Rescale World Units a échoué. Aucun Clean Reset n'est lancé."
-                    return false
-                )
-            ) else append logLines "Échelle système déjà équivalente à 1 cm : aucun rescale géométrique requis."
-
-            try(
-                units.SystemType = #centimeters
-                units.SystemScale = 1.0
-                units.DisplayType = #metric
-                units.MetricType = #centimeters
-            )catch(
-                append logLines "ERREUR : impossible d'appliquer les unités système/affichage en centimètres."
-                return false
-            )
-
-            local verified = false
-            try(verified = (units.SystemType == #centimeters and (abs (units.SystemScale - 1.0)) < 0.000001 and units.DisplayType == #metric and units.MetricType == #centimeters))catch()
-            if verified then append logLines "✔ Unités validées : système 1 unité = 1 cm, affichage métrique en cm."
-            else append logLines "ERREUR : vérification des unités en cm échouée."
-            verified
-        )
-
-        fn isPluginCleanupCandidate cStr = (
-            local low = toLower cStr
-            -- Les classes Missing/Unknown sont les placeholders habituels. Les autres motifs sont les
-            -- résidus legacy explicitement détectés par Scene Converter et non souhaités dans un asset Corona.
-            (matchPattern low pattern:"*missing*") or
-            (matchPattern low pattern:"*unknown*") or
-            (matchPattern low pattern:"*turbosmooth*pro*") or
-            (matchPattern low pattern:"*turbo*pro*") or
-            (matchPattern low pattern:"*mental*ray*") or
-            (matchPattern low pattern:"mental*") or
-            (matchPattern low pattern:"mr_*") or
-            (matchPattern low pattern:"*arch*design*")
-        )
-
-        fn collectMissingPluginItems = (
-            local items = #()
-            local mats = #()
-            for o in objects do (
-                local cStr = classof o as string
-                if isPluginCleanupCandidate cStr do append items #(#node, o, cStr)
-
-                -- Avant, les modifiers n'étaient jamais inspectés : TurboSmooth Pro pouvait donc passer inaperçu.
-                local mods = #()
-                try(for mod in o.modifiers do append mods mod)catch()
-                for mod in mods do (
-                    local modClass = classof mod as string
-                    if isPluginCleanupCandidate modClass do append items #(#modifier, o, mod, modClass)
-                )
-                if o.material != undefined do collectMaterials o.material mats
-            )
-            for m in mats do (
-                local cStr = classof m as string
-                if isPluginCleanupCandidate cStr do append items #(#material, m, cStr)
-            )
-            items
-        )
-
-        fn promptMissingPlugins logLines = (
-            if not chk_missingPlugins_s1.checked then return logLines
-            local items = collectMissingPluginItems()
-            if items.count == 0 then (
-                append logLines "Plugins/résidus legacy : aucun Missing/Unknown, TurboSmooth Pro ou Mental Ray détecté."
-                return logLines
-            )
-            local msg = "Plugins/résidus à supprimer détectés :\n\n"
-            for item in items do (
-                local itemName = ""
-                local className = ""
-                case item[1] of (
-                    #node: (try(itemName = item[2].name)catch(itemName = "[objet]"); className = item[3])
-                    #material: (try(itemName = item[2].name)catch(itemName = "[matériau]"); className = item[3])
-                    #modifier: (try(itemName = item[2].name + "  >  " + item[3].name)catch(itemName = "[modifier]"); className = item[4])
-                )
-                msg += "• " + className + " — " + itemName + "\n"
-            )
-            msg += "\nSupprimer ces éléments ?\nCette action peut modifier les matériaux, objets ou le rendu."
-            if queryBox msg title:"Iconia — Plugins / résidus legacy" then (
-                local removed = 0
-                for item in items do (
-                    case item[1] of (
-                        #node: try(delete item[2]; removed += 1)catch()
-                        #material: for o in objects where o.material == item[2] do try(o.material = undefined; removed += 1)catch()
-                        #modifier: try(deleteModifier item[2] item[3]; removed += 1)catch()
-                    )
-                )
-                append logLines ("Plugins/résidus détectés : " + (items.count as string) + ". Suppression confirmée : " + (removed as string) + " élément(s).")
-            ) else append logLines ("Plugins/résidus détectés : " + (items.count as string) + ". Action utilisateur : conservés.")
-            logLines
-        )
-
-        fn removeCamerasForAsset = (
-            local count = 0
-            for c in cameras do try(delete c; count += 1)catch()
-            count
-        )
-
-        fn removeXRefsForAsset = (
-            local targets = #()
-            for o in objects do if matchPattern (classof o as string) pattern:"*XRef*" ignoreCase:true do append targets o
-            for o in targets do try(delete o)catch()
-            targets.count
-        )
-
-        fn removeEmptyOrMissingObjects = (
-            local targets = #()
-            for o in objects do (
-                local cStr = classof o as string
-                local isMissing = (matchPattern cStr pattern:"*Missing*" ignoreCase:true) or (matchPattern cStr pattern:"*Unknown*" ignoreCase:true)
-                local isEmptyGeometry = false
-                if superclassof o == GeometryClass do (
-                    try (
-                        local polyCount = getPolygonCount o
-                        isEmptyGeometry = (polyCount[1] == 0 and polyCount[2] == 0)
-                    ) catch()
-                )
-                if isMissing or isEmptyGeometry do append targets o
-            )
-            for o in targets do try(delete o)catch()
-            targets.count
-        )
-
-        fn removeParticleViewObjects = (
-            local targets = #()
-            for o in objects where matchPattern o.name pattern:"Particle_View_*" ignoreCase:true do (
-                local isEmpty = true
-                try (
-                    local polyCount = getPolygonCount o
-                    isEmpty = (polyCount[1] == 0 and polyCount[2] == 0)
-                ) catch()
-                if isEmpty do append targets o
-            )
-            for o in targets do try(delete o)catch()
-            targets.count
-        )
-
-        fn removeAnimationKeysForAsset = (
-            local count = 0
-            for o in objects do (
-                try (
-                    if (numKeys o) > 0 do (
-                        deleteKeys o
-                        count += 1
-                    )
-                ) catch()
-            )
-            count
-        )
-
-        fn removeAnimationLayersForAsset = (
-            local removed = 0
-            try (
-                removed = maxOps.numAnimationLayers
-                if removed > 0 do maxOps.deleteAllAnimationLayers()
-            ) catch()
-            removed
-        )
-
-        fn removeMissingCoronaAssets = (
-            local count = 0
-            local bitmaps = #()
-            try(bitmaps = getClassInstances Bitmaptexture)catch()
-            for b in bitmaps do (
-                try (
-                    local f = b.filename
-                    local fLow = toLower f
-                    if f != "" and not doesFileExist f and ((matchPattern fLow pattern:"*.hdc") or (matchPattern fLow pattern:"*.cube")) do (
-                        b.filename = ""
-                        count += 1
-                    )
-                ) catch()
-            )
-            count
-        )
-
-        fn removeRootCustomAttributes = (
-            local knownNames = #("day1RefCA", "D1_FileNotes", "NoteCount")
-            local count = 0
-            local i = 0
-            try(i = custAttributes.count rootNode)catch()
-            while i > 0 do (
-                local ca = undefined
-                local caName = ""
-                try(ca = custAttributes.get rootNode i)catch()
-                try(caName = ca.name as string)catch()
-                if (findItem knownNames caName) > 0 do try(custAttributes.delete rootNode i; count += 1)catch()
-                i -= 1
-            )
-            count
-        )
-
-        fn removeJunkEffects = (
-            local count = 0
-            try (
-                if numEffects > 5 do for i = numEffects to 1 by -1 do ( deleteEffect i; count += 1 )
-            ) catch()
-            count
-        )
-
-        fn runPruneOptions logLines = (
-            append logLines "--- PRUNE / CLEAN REPORT ---"
-            if chk_removeCameras_s1.checked do append logLines ("Cameras supprimées : " + (removeCamerasForAsset() as string))
-            if chk_removeXRefs_s1.checked do append logLines ("XRefs supprimées : " + (removeXRefsForAsset() as string))
-            if chk_animLayers_s1.checked do append logLines ("Animation layers supprimées : " + (removeAnimationLayersForAsset() as string))
-            if chk_animKeys_s1.checked do append logLines ("Contrôleurs avec clés supprimées : " + (removeAnimationKeysForAsset() as string))
-            if chk_particleView_s1.checked do append logLines ("Particle View invalides supprimés : " + (removeParticleViewObjects() as string))
-            if chk_missingObjects_s1.checked do append logLines ("Objets manquants / géométries vides supprimés : " + (removeEmptyOrMissingObjects() as string))
-            if chk_coronaAssets_s1.checked do append logLines ("Assets Corona inexistants supprimés : " + (removeMissingCoronaAssets() as string))
-            if chk_rootCA_s1.checked do append logLines ("Root Custom Attributes connus supprimés : " + (removeRootCustomAttributes() as string))
-            if chk_junkEffects_s1.checked do append logLines ("Junk effects supprimés (seuil > 5) : " + (removeJunkEffects() as string))
-            if chk_reactor_s1.checked do append logLines "Reactor Collision : aucun nettoyage requis ou API legacy indisponible."
-            if chk_memory_s1.checked do (
-                try(clearUndoBuffer(); append logLines "Undo Buffer purgé.")catch(append logLines "Undo Buffer : purge non disponible.")
-                try(freeSceneBitmaps(); append logLines "Bitmap cache libéré.")catch(append logLines "Bitmap cache : libération non disponible.")
-            )
-            if chk_garbage_s1.checked do try(gc(); append logLines "Garbage Collector exécuté.")catch(append logLines "Garbage Collector : exécution non disponible.")
-            logLines
-        )
-
-        fn validateCleanScene logLines = (
-            local valid = true
-            append logLines "--- VALIDATION POST-CLEAN ---"
-            append logLines ("Objets restants : " + (objects.count as string))
-            if objects.count == 0 then (
-                append logLines "ERREUR : Scène vide après nettoyage."
-                valid = false
-            )
-            local currRend = classOf renderers.current as string
-            local isCorona = matchPattern currRend pattern:"*Corona*" ignoreCase:true
-            append logLines ("Renderer après nettoyage : " + currRend)
-            if not isCorona then (
-                append logLines "ERREUR : Corona n'est plus le moteur actif après nettoyage."
-                valid = false
-            )
-            local badMats = checkSceneMaterials()
-            append logLines ("Matériaux invalides après nettoyage : " + (badMats.count as string))
-            if badMats.count > 0 do valid = false
-            valid
-        )
-
         fn doCleanReset = (
             local dir = maxFilePath
             local name = getFilenameFile maxFileName
-            local backupPath = dir + name + "_preclean.max"
+            local backupPath = dir + name + "_backup.max"
             local tempExport = dir + name + "_CLEAN.max"
-            local logLines = lst_log_s1.items
-            local objectCountBefore = objects.count
-
-            -- Le backup est normalement créé avant le popup Missing Plugins ; ce fallback couvre la validation manuelle.
-            if not doesFileExist backupPath then (
-                if not (saveMaxFile backupPath quiet:true) then (
-                    append logLines "ERREUR : Impossible de créer le backup pré-nettoyage."
-                    lst_log_s1.items = logLines
-                    return false
-                )
-                append logLines ("Backup pré-nettoyage conservé : " + backupPath)
-            ) else append logLines ("Backup pré-nettoyage utilisé : " + backupPath)
-            logLines = runPruneOptions logLines
-            append logLines ("Objets avant / après prune : " + (objectCountBefore as string) + " / " + (objects.count as string))
-            lst_log_s1.items = logLines
 
             max select all
-            if selection.count == 0 then (
-                append logLines "ERREUR : Aucun objet sélectionnable à exporter. Restauration du backup."
-                lst_log_s1.items = logLines
-                loadMaxFile backupPath quiet:true useFileUnits:true
-                return false
-            )
+            saveMaxFile backupPath quiet:true
             saveNodes selection tempExport quiet:true
-
+            
             if loadMaxFile tempExport quiet:true useFileUnits:true then (
-                local isValid = validateCleanScene logLines
-                if isValid then (
+                if objects.count == 0 then (
+                    lst_log_s1.items = #("ERREUR : Scène vide après nettoyage. Restauration de la sauvegarde...")
+                    loadMaxFile backupPath quiet:true
+                ) else (
                     saveMaxFile (dir + name + ".max") quiet:true
                     if doesFileExist tempExport do deleteFile tempExport
-                    append logLines "✔ Clean Reset effectué avec succès !"
-                    append logLines ("Backup conservé : " + backupPath)
-                    lst_log_s1.items = logLines
+                    if doesFileExist backupPath do deleteFile backupPath
+                    
+                    lst_log_s1.items = #("✔ Clean Reset effectué avec succès !")
                     completeStep1()
-                ) else (
-                    append logLines "ERREUR : Validation post-clean échouée. Restauration du backup..."
-                    lst_log_s1.items = logLines
-                    loadMaxFile backupPath quiet:true useFileUnits:true
                 )
             ) else (
-                append logLines "ERREUR : Impossible de recharger la scène nettoyée. Restauration du backup..."
-                lst_log_s1.items = logLines
-                loadMaxFile backupPath quiet:true useFileUnits:true
+                lst_log_s1.items = #("ERREUR : Impossible de recharger la scène nettoyée.")
             )
         )
 
@@ -831,33 +501,6 @@ macroScript Iconia_FileChecker
             )
             
             append logLines "✔ Moteur Corona détecté."
-
-            -- Backup créé avant toute suppression interactive (plugins manquants compris).
-            local originalScenePath = maxFilePath + maxFileName
-            local precleanBackupPath = maxFilePath + (getFilenameFile maxFileName) + "_preclean.max"
-            if not (saveMaxFile precleanBackupPath quiet:true) then (
-                append logLines "ERREUR : Impossible de créer le backup pré-nettoyage."
-                lst_log_s1.items = logLines
-                return false
-            )
-            -- saveMaxFile vers un autre chemin peut changer le fichier courant : on ré-enregistre donc immédiatement l'original.
-            if not (saveMaxFile originalScenePath quiet:true) then (
-                append logLines "ERREUR : Backup créé, mais impossible de restaurer le fichier courant."
-                lst_log_s1.items = logLines
-                return false
-            )
-            append logLines ("Backup pré-nettoyage conservé : " + precleanBackupPath)
-
-            -- Normalisation obligatoire avant tout nettoyage : la sauvegarde préclean permet un retour sûr si elle échoue.
-            if not (normalizeSceneUnitsToCentimeters logLines) then (
-                append logLines "Restauration du backup pré-nettoyage après échec de normalisation des unités..."
-                lst_log_s1.items = logLines
-                loadMaxFile precleanBackupPath quiet:true useFileUnits:true
-                return false
-            )
-
-            -- Les résidus Missing/Unknown sont proposés à l'utilisateur avant le contrôle des matériaux.
-            logLines = promptMissingPlugins logLines
             
             local badMats = checkSceneMaterials()
             if badMats.count > 0 then (
@@ -987,9 +630,6 @@ macroScript Iconia_FileChecker
             )
             local vrayVariants = #("_V-ray", "-V-ray", " V-ray", "(V-ray)", "_v-ray", "-v-ray", " v-ray", "(v-ray)", "_V-Ray", "-V-Ray", " V-Ray", "(V-Ray)", "V-ray", "v-ray", "V-Ray", "_VRay", "-VRay", " VRay", "(VRay)", "_vray", "-vray", " vray", "(vray)", "_VRAY", "-VRAY", " VRAY", "(VRAY)", "_Vray", "-Vray", " Vray", "(Vray)", "_VRayMtl","-VRayMtl"," VRayMtl", "VRay", "vray", "VRAY", "Vray")
             for v in vrayVariants do s = substituteString s v ""
-            -- Un millésime collé à un tag moteur (ex. _2015vray) ne pouvait pas être reconnu
-            -- au premier passage. Après retrait de V-Ray/Corona, on repasse donc le filtre année.
-            s = removeYear s
             
             local prevS = ""
             while prevS != s do ( prevS = s; s = substituteString s "__" "_" )
@@ -1071,32 +711,9 @@ macroScript Iconia_FileChecker
             return "OK"
         )
 
-        fn findMapInProject fNameOnly =
-        (
-            local scenePath = maxFilePath
-            if scenePath == "" or fNameOnly == "" then return ""
-
-            -- Priorité explicite : maps/map/textures/texture, puis racine, puis tous les sous-dossiers.
-            local priorityFolders = #("maps", "map", "textures", "texture")
-            for sub in priorityFolders do (
-                local directPath = scenePath + sub + "\\" + fNameOnly
-                if doesFileExist directPath do return directPath
-            )
-            local rootPath = scenePath + fNameOnly
-            if doesFileExist rootPath do return rootPath
-
-            local Directory = dotNetClass "System.IO.Directory"
-            local SearchOption = dotNetClass "System.IO.SearchOption"
-            local foundFiles = undefined
-            try(foundFiles = Directory.GetFiles scenePath fNameOnly SearchOption.AllDirectories)catch()
-            -- Directory.GetFiles est converti en Array MAXScript (#(...)) : utiliser la propriété Array .count, pas .Length.
-            -- La fonction globale count est masquée dans ce rollout par une variable locale nommée count.
-            if foundFiles != undefined and foundFiles.count > 0 do return foundFiles[1]
-            ""
-        )
-
         fn relinkBitmaps doFixOutside =
         (
+            local subFolders = #("","Map","Maps","Texture","Textures","map","maps","texture","textures")
             local scenePath  = maxFilePath
             local fixedCount = 0
             local missingCount = 0
@@ -1106,8 +723,12 @@ macroScript Iconia_FileChecker
                 return #(0,0)
             )
 
-            collectAllBitmaps()
-            for bmp in bitmapList do (
+            local allBmps = #()
+            try( join allBmps (getClassInstances BitmapTexture) )catch()
+            try( join allBmps (getClassInstances CoronaBitmap)  )catch()
+            try( join allBmps (getClassInstances VRayBitmap)    )catch()
+
+            for bmp in allBmps do (
                 local fname = ""
                 try( fname = bmp.filename )catch()
                 if fname == undefined or fname == "" then continue
@@ -1115,127 +736,33 @@ macroScript Iconia_FileChecker
                 local isAbs = pathConfig.isAbsolutePath fname
                 local isExisting = doesFileExist fname
                 local isOutside = false
-                if isAbs and isExisting do (
+                
+                if isAbs and isExisting and scenePath != "" do (
                     if (findString (toLower fname) (toLower scenePath)) == undefined do isOutside = true
                 )
 
                 if not isAbs or not isExisting or (doFixOutside and isOutside) then (
-                    local foundPath = findMapInProject (filenameFromPath fname)
-                    if foundPath != "" then (
-                        if (toLower fname) != (toLower foundPath) do (
-                            try(bmp.filename = foundPath; fixedCount += 1)catch()
+                    local fNameOnly = filenameFromPath fname
+                    local foundIt = false
+
+                    for sub in subFolders while not foundIt do (
+                        local testPath = scenePath
+                        if sub != "" do testPath += sub + "\\"
+                        testPath += fNameOnly
+                        
+                        if doesFileExist testPath then (
+                            if (toLower fname) != (toLower testPath) do (
+                                try( bmp.filename = testPath )catch()
+                                foundIt = true
+                                fixedCount += 1
+                            )
                         )
-                    ) else if not isAbs or not isExisting do missingCount += 1
+                    )
+                    if not foundIt and (not isAbs or not isExisting) then missingCount += 1
                 )
             )
-            try(atsops.refresh())catch()
-            #(fixedCount, missingCount)
-        )
-
-        fn moveProjectMapsToCanonicalFolder =
-        (
-            local scenePath = maxFilePath
-            if scenePath == "" then return #(0,0,0,false)
-            local targetFolder = scenePath + "maps\\"
-            local Directory = dotNetClass "System.IO.Directory"
-            if not (Directory.Exists targetFolder) do Directory.CreateDirectory targetFolder
-            if not (Directory.Exists targetFolder) then return #(0,0,0,false)
-
-            collectAllBitmaps()
-            local sources = #()
-            local sceneLow = toLower scenePath
-            local targetLow = toLower targetFolder
-            for b in bitmapList do (
-                local fname = ""
-                try(fname = b.filename)catch()
-                if fname != undefined and fname != "" and (pathConfig.isAbsolutePath fname) and (doesFileExist fname) do (
-                    local fLow = toLower fname
-                    -- On ne déplace que les fichiers appartenant déjà au projet et hors du dossier /maps canonique.
-                    if (findString fLow sceneLow) == 1 and (findString fLow targetLow) != 1 do appendIfUnique sources fname
-                )
-            )
-            if sources.count == 0 then return #(0,0,0,false)
-
-            -- Les sources appartiennent au dossier de l'asset : l'affichage relatif évite de répéter
-            -- une racine très longue sur chaque ligne, sans modifier les chemins réellement déplacés.
-            local nl = (bit.intAsChar 13) + (bit.intAsChar 10)
-            local msg = "Maps détectées hors du dossier de l'asset /maps :" + nl + nl
-            for src in sources do (
-                local displaySrc = src
-                if (findString (toLower src) sceneLow) == 1 then (
-                    local relativeStart = scenePath.count + 1
-                    if relativeStart <= src.count then displaySrc = "\\" + (substring src relativeStart -1)
-                    else displaySrc = "\\"
-                )
-                msg += displaySrc + nl
-            )
-            msg += nl + "Déplacer ces fichiers dans :" + nl + "\\maps\\ ?"
-
-            -- queryBox est trop étroit et replie les chemins. Fenêtre large, scrollable et sans retour à la ligne.
-            local form = dotNetObject "System.Windows.Forms.Form"
-            local panel = dotNetObject "System.Windows.Forms.Panel"
-            local pathsBox = dotNetObject "System.Windows.Forms.TextBox"
-            local yesButton = dotNetObject "System.Windows.Forms.Button"
-            local noButton = dotNetObject "System.Windows.Forms.Button"
-            local DockStyle = dotNetClass "System.Windows.Forms.DockStyle"
-            local ScrollBars = dotNetClass "System.Windows.Forms.ScrollBars"
-            local DialogResult = dotNetClass "System.Windows.Forms.DialogResult"
-
-            form.Text = "Iconia — Move maps to /maps"
-            form.Width = 1200
-            form.Height = 560
-            form.StartPosition = (dotNetClass "System.Windows.Forms.FormStartPosition").CenterScreen
-            form.MinimizeBox = false
-            form.MaximizeBox = true
-            form.ShowInTaskbar = false
-
-            pathsBox.Multiline = true
-            pathsBox.ReadOnly = true
-            pathsBox.WordWrap = false
-            pathsBox.ScrollBars = ScrollBars.Both
-            pathsBox.Dock = DockStyle.Fill
-            pathsBox.Text = msg
-
-            panel.Dock = DockStyle.Bottom
-            panel.Height = 52
-            yesButton.Text = "Déplacer vers /maps"
-            yesButton.Width = 180
-            yesButton.Height = 28
-            -- Groupe de boutons centré dans la largeur utile de la fenêtre.
-            yesButton.Left = 395
-            yesButton.Top = 10
-            yesButton.DialogResult = DialogResult.Yes
-            noButton.Text = "Conserver les emplacements"
-            noButton.Width = 210
-            noButton.Height = 28
-            noButton.Left = 587
-            noButton.Top = 10
-            noButton.DialogResult = DialogResult.No
-            panel.Controls.Add yesButton
-            panel.Controls.Add noButton
-            form.Controls.Add pathsBox
-            form.Controls.Add panel
-            form.AcceptButton = yesButton
-            form.CancelButton = noButton
-
-            local shouldMove = ((form.ShowDialog()) == DialogResult.Yes)
-            form.Dispose()
-            if not shouldMove then return #(sources.count,0,0,false)
-
-            local moved = 0
-            local failed = 0
-            for src in sources do (
-                local dest = targetFolder + (filenameFromPath src)
-                if (toLower src) != (toLower dest) then (
-                    if doesFileExist dest do dest = getUniqueLocalFile dest
-                    if renameFile src dest then (
-                        for b in bitmapList do try(if (stricmp b.filename src) == 0 do b.filename = dest)catch()
-                        moved += 1
-                    ) else failed += 1
-                )
-            )
-            try(atsops.refresh())catch()
-            #(sources.count,moved,failed,true)
+            atsops.refresh()
+            return #(fixedCount, missingCount)
         )
 
         fn getLocalMapsFolder =
@@ -1243,11 +770,16 @@ macroScript Iconia_FileChecker
             local scenePath = maxFilePath
             if scenePath == "" then return ""
 
-            -- /maps est le dossier canonique Iconia, y compris si une ancienne scène contient /textures.
             local Directory = dotNetClass "System.IO.Directory"
+            local subFolders = #("maps","Maps","map","Map","textures","Textures","texture","Texture")
+            for sub in subFolders do (
+                local testFolder = scenePath + sub + "\\"
+                if Directory.Exists testFolder do return testFolder
+            )
+
             local newFolder = scenePath + "maps\\"
             if not (Directory.Exists newFolder) do Directory.CreateDirectory newFolder
-            if Directory.Exists newFolder then newFolder else ""
+            if Directory.Exists newFolder then newFolder else scenePath
         )
 
         fn getUniqueLocalFile basePath =
@@ -1381,7 +913,8 @@ macroScript Iconia_FileChecker
             )
 
             local okMaps = totalMaps - missingMaps - relativeMaps - emptyMaps
-            append logLines "Recherche auto : maps/map/textures/texture, racine, puis tous les sous-dossiers."
+
+            append logLines "Les bitmaps doivent se trouver dans un dossier maps, textures ou à la racine du dossier."
             append logLines ""
             append logLines ("Total bitmaps found  : " + totalMaps as string)
             append logLines ("OK, in project folder: " + (okMaps - wrongLocationMaps) as string)
@@ -1398,35 +931,22 @@ macroScript Iconia_FileChecker
 
             if totalMaps == 0 then (
                 append logLines ""
-                append logLines "No bitmaps in scene. Étape validée automatiquement."
+                append logLines "No bitmaps in scene."
                 lst_log_s3.items = logLines
+                btn_main_s3.enabled = false
+                btn_main_s3.text = "NO MAPS\nFOUND"
                 step3_state = 4
-                if currentStep == 3 then completeStep3() else showCurrentStepUI()
+                showCurrentStepUI()
                 return true
             )
 
-            -- Toute map Missing ou Relative déclenche immédiatement le relink récursif.
-            if (missingMaps + relativeMaps) > 0 then (
-                append logLines ""
-                append logLines "Missing/Relative détectées : relink automatique en cours..."
-                lst_log_s3.items = logLines
-                doStep3_Relink()
-                return false
-            )
-
             lst_log_s3.items = logLines
-            if (emptyMaps + wrongLocationMaps) == 0 then (
-                local moveResult = moveProjectMapsToCanonicalFolder()
-                if moveResult[1] > 0 then (
-                    logLines = lst_log_s3.items
-                    append logLines ("Maps hors /maps détectées : " + (moveResult[1] as string))
-                    if moveResult[4] then append logLines ("Maps déplacées vers /maps : " + (moveResult[2] as string) + " | Échecs : " + (moveResult[3] as string)) else append logLines "Déplacement vers /maps refusé par l'utilisateur."
-                    lst_log_s3.items = logLines
-                )
-                append logLines "Toutes les maps sont valides. Étape validée automatiquement."
-                lst_log_s3.items = logLines
+
+            if (missingMaps + relativeMaps + emptyMaps + wrongLocationMaps) == 0 then (
                 step3_state = 4
-                if currentStep == 3 then completeStep3() else showCurrentStepUI()
+                btn_main_s3.text = "ALL MAPS\nOK ✓"
+                btn_main_s3.enabled = false
+                showCurrentStepUI()
                 return true
             ) else (
                 step3_state = 2
@@ -1449,57 +969,53 @@ macroScript Iconia_FileChecker
             local missingCount = result[2]
 
             collectAllBitmaps()
-            local stillInvalid = 0
+            local stillMissing = 0
             local stillOutside = 0
             local scenePath = toLower maxFilePath
+            
             for b in bitmapList do (
                 local st = checkBitmapStatus b
-                if st == "MISSING" or st == "RELATIVE" or st == "EMPTY" then stillInvalid += 1
+                if st == "MISSING" or st == "RELATIVE" then stillMissing += 1
                 else if st == "OK" and scenePath != "" do (
                     local fname = ""
                     try( fname = b.filename )catch()
-                    if fname != undefined and fname != "" do if (findString (toLower fname) scenePath) == undefined do stillOutside += 1
+                    if fname != undefined and fname != "" do (
+                        if (findString (toLower fname) scenePath) == undefined do stillOutside += 1
+                    )
                 )
             )
 
             logLines = #()
             append logLines ("Maps relinked / fixed : " + fixedCount as string)
-            append logLines ("Still missing / relative / empty : " + stillInvalid as string)
+            append logLines ("Still missing / relative : " + stillMissing as string)
             if stillOutside > 0 do append logLines ("Still outside project  : " + stillOutside as string)
             append logLines ""
 
-            if stillInvalid == 0 and stillOutside == 0 then (
-                local moveResult = moveProjectMapsToCanonicalFolder()
-                if moveResult[1] > 0 then (
-                    append logLines ("Maps hors /maps détectées : " + (moveResult[1] as string))
-                    if moveResult[4] then append logLines ("Maps déplacées vers /maps : " + (moveResult[2] as string) + " | Échecs : " + (moveResult[3] as string)) else append logLines "Déplacement vers /maps refusé par l'utilisateur."
+            if stillMissing == 0 then (
+                if stillOutside > 0 then (
+                    append logLines "No missing maps, but some remain outside."
+                    btn_main_s3.text = "MAPS OK\n⚠ CHECK PATHS"
+                ) else (
+                    append logLines "All maps resolved and in project !"
+                    btn_main_s3.text = "ALL MAPS\nOK ✓"
                 )
-                append logLines "Toutes les maps sont valides. Étape validée automatiquement."
                 step3_state = 4
-                lst_log_s3.items = logLines
-                if currentStep == 3 then completeStep3() else showCurrentStepUI()
-                return true
-            )
-
-            if stillInvalid > 0 then (
-                append logLines "--- Still missing / relative / empty ---"
+                btn_main_s3.enabled = false
+            ) else (
+                append logLines "--- Still missing ---"
                 for b in bitmapList do (
                     local st = checkBitmapStatus b
-                    if st == "MISSING" or st == "RELATIVE" or st == "EMPTY" then (
+                    if st == "MISSING" or st == "RELATIVE" then (
                         local fname = ""
                         try( fname = b.filename )catch()
                         append logLines ("  x " + filenameFromPath fname)
                     )
                 )
-                step3_state = 3
-            ) else (
-                append logLines "No missing maps, but some remain outside the project."
-                step3_state = 2
-                btn_main_s3.text = "MAPS OK\n⚠ CHECK PATHS"
+                step3_state = 3 
             )
+            
             lst_log_s3.items = logLines
             showCurrentStepUI()
-            false
         )
 
         fn completeStep3 = ( 
@@ -1522,30 +1038,9 @@ macroScript Iconia_FileChecker
         fn wColor = (   
             local r = random 0 255; local g = random 0 255; local b = random 0 255
             local changedCount = 0
-            wirecolorBackup = #()
-            for o in objects do (
-                if o.wirecolor == (color 0 0 0) then (
-                    append wirecolorBackup #(o, o.wirecolor)
-                    o.wirecolor = (color r g b)
-                    changedCount += 1
-                )
-            )
-            if changedCount > 0 then lst_log_s5.items = #("✔ Correction automatique : " + (changedCount as string) + " wirecolor(s) noir(s) remplacé(s).", "Utilisez UNDO WIRECOLOR pour restaurer uniquement les couleurs d'origine.")
-            else lst_log_s5.items = #("✔ Aucun wirecolor noir trouvé.", "Aucune correction nécessaire.")
-            changedCount
-        )
-
-        fn undoWirecolor = (
-            local restoredCount = 0
-            for item in wirecolorBackup do (
-                local node = item[1]
-                local originalColor = item[2]
-                if isValidNode node do try(node.wirecolor = originalColor; restoredCount += 1)catch()
-            )
-            wirecolorBackup = #()
-            btn_wire_s5.visible = false
-            lst_log_s5.items = #("↩ Undo Wirecolor : " + (restoredCount as string) + " couleur(s) d'origine restaurée(s).", "Vous pouvez maintenant modifier les wirecolors manuellement ou valider l'étape.")
-            restoredCount
+            for o in objects do ( if o.wirecolor == (color 0 0 0) then ( o.wirecolor = (color r g b); changedCount += 1 ) )
+            if changedCount > 0 then lst_log_s5.items = #("Validé : " + (changedCount as string) + " wirecolors changés.")
+            else lst_log_s5.items = #("Validé : Aucun wirecolor noir trouvé.")
         )
 
         fn listAllLayers = (
@@ -1563,60 +1058,9 @@ macroScript Iconia_FileChecker
             return n
         )
         
-        fn clearSearchReplaceState = (
-            replacePending = false
-            replacePreviewActive = false
-            replacePendingSearch = ""
-            replacePendingReplacement = ""
-            replacePendingTargets = #()
-            replacePreviewOriginalNames = #()
-            btn_n_replace.text = "Search & Replace"
-            btn_n_replace.width = 260
-            btn_n_replace_cancel.visible = false
-        )
-
-        fn cancelSearchReplacePreview = (
-            if replacePreviewActive do (
-                undo off (
-                    for item in replacePreviewOriginalNames do (
-                        local obj = item[1]
-                        if isValidNode obj do try(obj.name = item[2])catch()
-                    )
-                )
-                updateNameList()
-            )
-            clearSearchReplaceState()
-        )
-
-        fn resetSearchReplaceConfirmation = (
-            cancelSearchReplacePreview()
-        )
-
-        fn getSearchReplaceTargets = (
-            local targets = #()
-            -- La sélection explicite dans la liste est prioritaire, puis celle de la scène.
-            if lst_names_s7.selection.isEmpty == false then (
-                local selIndices = lst_names_s7.selection as array
-                for i in selIndices do (
-                    local obj = getNodeByName lst_names_s7.items[i]
-                    if obj != undefined do appendIfUnique targets obj
-                )
-            ) else if selection.count > 0 then (
-                for obj in selection where isValidNode obj do appendIfUnique targets obj
-            ) else (
-                for obj in objects where isValidNode obj do append targets obj
-            )
-            targets
-        )
-
         fn updateNameList = (
-            -- Réinitialisation forcée : MultiListBox peut conserver des indices sélectionnés
-            -- qui désignent les anciens noms après un renommage.
-            try(lst_names_s7.selection = #{})catch()
-            local arr = for o in objects where isValidNode o collect o.name
-            lst_names_s7.items = #()
+            local arr = for o in objects collect o.name
             lst_names_s7.items = sort arr
-            try(lst_names_s7.selection = #{})catch()
         )
         
         fn renameItemFromList itemName = (
@@ -1673,19 +1117,15 @@ macroScript Iconia_FileChecker
             local imagePath = undefined
             for ext in imgextensions do ( if doesFileExist (imgfolder + imgbaseName + ext) do imagePath = (imgfolder + imgbaseName + ext) )
             
-            -- L'étape Preview est la précondition : pas de seconde alerte redondante ici.
-            if imagePath == undefined then return #()
+            if imagePath == undefined then ( messageBox "No matching image found (jpg/png) for AI."; return #() )
             
             local pythonExe = "C:\\Users\\" + sysInfo.username + "\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe"
             local scriptDir = "C:\\Users\\" + sysInfo.username + "\\Documents\\3ds Max 2024\\Scripts\\"
-            local apiDir = "L:\\0-Documentation\\3DS Max Configuration\\3DS Max Plugins\\Antoine\\API\\"
             local pythonScript = scriptDir + "_MyTools_Files_MapSearch.py"
-            local keywordsFile = apiDir + "MaxStack-MaxStack_FileChecker_Keywords_List.txt"
+            local keywordsFile = scriptDir + "MaxStack-MaxStack_FileChecker_Keywords_List.txt"
             local tempFile = getDir #temp + "\\object_list.txt"
             
             if not (doesFileExist pythonExe) then ( messageBox "Python introuvable"; return #() )
-            if not (doesFileExist pythonScript) then ( messageBox ("Script AI introuvable :\n" + pythonScript) title:"AI Search"; return #() )
-            if not (doesFileExist keywordsFile) then ( messageBox ("Bibliothèque de mots-clés introuvable :\n" + keywordsFile) title:"AI Search"; return #() )
             if doesFileExist tempFile then deleteFile tempFile
             
             local args = "/c \"\"" + pythonExe + "\" \"" + pythonScript + "\" \"" + imagePath + "\" \"" + tempFile + "\" \"" + keywordsFile + "\"\""
@@ -1694,26 +1134,8 @@ macroScript Iconia_FileChecker
             p.Start(); p.WaitForExit()
             
             local keywordsFound = #()
-            if doesFileExist tempFile then (
-                local f = openFile tempFile
-                local outputLines = #()
-                while not eof f do append outputLines (readLine f)
-                close f
-                if outputLines.count > 0 and outputLines[1] == "__AI_SEARCH_ERROR__" then (
-                    local errorText = ""
-                    for i = 2 to outputLines.count do errorText += outputLines[i] + "\n"
-                    messageBox errorText title:"AI Search — modèles indisponibles"
-                    return #()
-                )
-                for line in outputLines do (
-                    local cleanLine = trimLeft (trimRight line)
-                    if cleanLine != "" do append keywordsFound cleanLine
-                )
-                return keywordsFound
-            ) else (
-                messageBox "AI Search n'a créé aucun résultat." title:"AI Search"
-                return #()
-            )
+            if doesFileExist tempFile then ( local f = openFile tempFile; while not eof f do ( local line = readLine f; if (trimLeft (trimRight line)) != "" then append keywordsFound line ); close f; return keywordsFound )
+            else ( messageBox "Erreur AI"; return #() )
         )
 
         fn initStep9Keywords = (
@@ -1825,14 +1247,9 @@ macroScript Iconia_FileChecker
                         if mapsOk then ( stepStates[3] = 1; newStep = 4; autoChecking = true )
                     )
                     if newStep == 5 and stepStates[5] == 0 then (
-                        -- Correction immédiate puis passage automatique à l'étape suivante.
-                        -- Le bouton Undo reste disponible dans l'étape suivante tant qu'une restauration est possible.
-                        local changedCount = 0
-                        undo "Auto-fix black wirecolor" on changedCount = wColor()
-                        wirecolorAutoProcessed = true
-                        stepStates[5] = 1
-                        newStep = 6
-                        autoChecking = true
+                        local hasBlack = false
+                        for o in objects where o.wirecolor == (color 0 0 0) do ( hasBlack = true; exit )
+                        if not hasBlack then ( stepStates[5] = 1; newStep = 6; autoChecking = true )
                     )
                     if newStep == 6 and stepStates[6] == 0 then (
                         if LayerManager.count <= 1 then ( stepStates[6] = 1; newStep = 7; autoChecking = true )
@@ -1879,16 +1296,8 @@ macroScript Iconia_FileChecker
             switchStep 1 
         )
 
-        on rlMasterChecker close do ( if replacePreviewActive do cancelSearchReplacePreview() )
-
-        on btn_next pressed do ( 
-            if currentStep == 7 and replacePreviewActive do cancelSearchReplacePreview()
-            if currentStep < 9 do switchStep (currentStep + 1) 
-        )
-        on btn_prev pressed do ( 
-            if currentStep == 7 and replacePreviewActive do cancelSearchReplacePreview()
-            if currentStep > 1 do switchStep (currentStep - 1) 
-        )
+        on btn_next pressed do ( if currentStep < 9 do switchStep (currentStep + 1) )
+        on btn_prev pressed do ( if currentStep > 1 do switchStep (currentStep - 1) )
 
         -- EVENTS S1 (CORONA & RESET)
         on btn_main_s1 pressed do ( doCheckCorona() )
@@ -1967,7 +1376,7 @@ macroScript Iconia_FileChecker
         on btn_done_s4 pressed do ( stepStates[4] = 1; updateChecklistUI(); switchStep 5 )
 
         -- EVENTS S5 (WIRECOLOR)
-        on btn_wire_s5 pressed do ( undo "Restore Wirecolor" on undoWirecolor() )
+        on btn_wire_s5 pressed do ( undo "Wirecolor" on wColor() )
         on btn_done_s5 pressed do ( stepStates[5] = 1; updateChecklistUI(); switchStep 6 )
 
         -- EVENTS S6 (LAYERS)
@@ -1988,14 +1397,12 @@ macroScript Iconia_FileChecker
 
         -- EVENTS S7 (NAMES)
         on btn_n_all pressed do (
-            if replacePreviewActive do cancelSearchReplacePreview()
             local pfx = edt_n_pref.text; local base = edt_n_base.text
             undo "Name All" on ( for o in objects do ( if base != "" then o.name = pfx + "_" + base else if (findString o.name pfx) == undefined do o.name = pfx + "_" + o.name ) )
             updateNameList()
         )
         
         on btn_n_sel pressed do (
-            if replacePreviewActive do cancelSearchReplacePreview()
             local pfx = edt_n_pref.text; local base = edt_n_base.text
             local targetObjs = #()
             
@@ -2021,69 +1428,26 @@ macroScript Iconia_FileChecker
         )
         
         on btn_n_grp pressed do (
-            if replacePreviewActive do cancelSearchReplacePreview()
             local pfx = edt_n_pref.text; local Selmain = #()
             for o in objects do ( if o.parent == undefined do append Selmain o )
             undo "Name Group" on ( if Selmain.count >= 2 then ( for s in Selmain do s.name = pfx + "_" + s.name ) else ( for s in Selmain do s.name = pfx ) )
             updateNameList()
         )
         
-        on edt_n_search changed txt do resetSearchReplaceConfirmation()
-        on edt_n_repl changed txt do resetSearchReplaceConfirmation()
-
         on btn_n_replace pressed do (
-            local sText = edt_n_search.text
-            local rText = edt_n_repl.text
-            if sText == "" then (
-                resetSearchReplaceConfirmation()
-            ) else if not replacePending or replacePendingSearch != sText or replacePendingReplacement != rText then (
-                -- Premier clic : aperçu temporaire, jamais une validation définitive.
-                cancelSearchReplacePreview()
-                replacePendingTargets = getSearchReplaceTargets()
-                replacePendingSearch = sText
-                replacePendingReplacement = rText
-                replacePreviewOriginalNames = #()
-                undo off (
-                    for o in replacePendingTargets where isValidNode o do (
-                        if matchPattern o.name pattern:("*" + replacePendingSearch + "*") do (
-                            append replacePreviewOriginalNames #(o, o.name)
-                            o.name = substituteString o.name replacePendingSearch replacePendingReplacement
-                        )
-                    )
+            local sText = edt_n_search.text; local rText = edt_n_repl.text
+            if sText != "" do ( 
+                undo "Search Replace" on ( 
+                    for o in objects do (
+                        if matchPattern o.name pattern:("*"+sText+"*") do o.name = substituteString o.name sText rText 
+                    ) 
                 )
-                replacePending = true
-                replacePreviewActive = true
-                btn_n_replace.text = "APPLY"
-                btn_n_replace.width = 125
-                btn_n_replace_cancel.visible = true
-                updateNameList()
-            ) else (
-                -- Second clic : on annule l'aperçu, puis on réapplique dans un Undo définitif.
-                local finalTargets = replacePendingTargets
-                local finalSearch = replacePendingSearch
-                local finalReplacement = replacePendingReplacement
-                cancelSearchReplacePreview()
-                undo "Search Replace" on (
-                    for o in finalTargets where isValidNode o do (
-                        if matchPattern o.name pattern:("*" + finalSearch + "*") do o.name = substituteString o.name finalSearch finalReplacement
-                    )
-                )
-                updateNameList()
+                updateNameList() 
             )
         )
         
-        on btn_n_replace_cancel pressed do cancelSearchReplacePreview()
-
-        on lst_names_s7 doubleClicked idx do (
-            if replacePreviewActive do cancelSearchReplacePreview()
-            if idx > 0 do renameItemFromList lst_names_s7.items[idx]
-        )
-        on btn_done_s7 pressed do (
-            if replacePreviewActive do cancelSearchReplacePreview()
-            stepStates[7] = 1
-            updateChecklistUI()
-            switchStep 8
-        )
+        on lst_names_s7 doubleClicked idx do ( if idx > 0 do renameItemFromList lst_names_s7.items[idx] )
+        on btn_done_s7 pressed do ( stepStates[7] = 1; updateChecklistUI(); switchStep 8 )
 
         -- EVENTS S8 (PREVIEW)
         on btn_prev_fix_s8 pressed do (

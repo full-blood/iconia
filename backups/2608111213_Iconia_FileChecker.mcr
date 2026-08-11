@@ -248,7 +248,7 @@ macroScript Iconia_FileChecker
         -- UI ÉTAPE 5 : WIRECOLOR
         -- ===========================================================
         listBox lst_log_s5 "" pos:[180,20] width:590 height:12 visible:false
-        button btn_wire_s5 "UNDO WIRECOLOR" pos:[470,515] width:140 height:60 visible:false
+        button btn_wire_s5 "FIX BLACK WIRECOLOR" pos:[470,515] width:140 height:60 visible:false
         button btn_done_s5 "VALIDATE ✔" pos:[630,515] width:140 height:60 visible:false
 
         -- ===========================================================
@@ -277,7 +277,6 @@ macroScript Iconia_FileChecker
         label lbl_n_repl "Replace:" pos:[180,430] width:60 height:16 visible:false
         edittext edt_n_repl "" pos:[240,428] width:200 height:20 visible:false
         button btn_n_replace "Search & Replace" pos:[180,460] width:260 height:30 visible:false
-        button btn_n_replace_cancel "CANCEL" pos:[315,460] width:125 height:30 visible:false
 
         button btn_done_s7 "VALIDATE ✔" pos:[630,515] width:140 height:60 visible:false
 
@@ -328,14 +327,6 @@ macroScript Iconia_FileChecker
         
         local step2_state   = 1
         local cleanedName   = ""
-        local wirecolorBackup = #()
-        local wirecolorAutoProcessed = false
-        local replacePending = false
-        local replacePreviewActive = false
-        local replacePendingSearch = ""
-        local replacePendingReplacement = ""
-        local replacePendingTargets = #()
-        local replacePreviewOriginalNames = #()
 
         local step3_state       = 1
         local bitmapList        = #()
@@ -373,7 +364,7 @@ macroScript Iconia_FileChecker
                 lst_log_s4, btn_piv_each_s4, btn_piv_grp_s4, btn_done_s4,
                 lst_log_s5, btn_wire_s5, btn_done_s5,
                 lst_log_s6, btn_lay_fix_s6, btn_done_s6,
-                lbl_n_pref, edt_n_pref, lbl_n_base, edt_n_base, btn_n_all, btn_n_grp, btn_n_sel, lbl_n_search, edt_n_search, lbl_n_repl, edt_n_repl, btn_n_replace, btn_n_replace_cancel, btn_done_s7, lst_names_s7,
+                lbl_n_pref, edt_n_pref, lbl_n_base, edt_n_base, btn_n_all, btn_n_grp, btn_n_sel, lbl_n_search, edt_n_search, lbl_n_repl, edt_n_repl, btn_n_replace, btn_done_s7, lst_names_s7,
                 lst_log_s8, btn_prev_fix_s8, btn_done_s8,
                 lbl_cat_s9, cbx_cat, lbl_subcat_s9, cbx_subcat, btn_ai_s9, btn_done_s9, btn_final_validate_s9, lbl_key_s9, cbx_k1, cbx_k2, cbx_k3, cbx_k4, cbx_k5, cbx_k6, cbx_k7, cbx_k8, cbx_k9, cbx_k10, cbx_k11, cbx_k12, cbx_k13, cbx_k14, cbx_k15
             )
@@ -414,19 +405,18 @@ macroScript Iconia_FileChecker
             
             else if currentStep == 5 then ( 
                 lst_log_s5.visible = true
-                btn_done_s5.visible = true
-
-                -- La correction est automatique à la première entrée. Les couleurs d'origine sont
-                -- conservées pour un Undo ciblé, sans annuler d'autres actions ultérieures de l'utilisateur.
-                if not wirecolorAutoProcessed then (
-                    local changedCount = 0
-                    undo "Auto-fix black wirecolor" on changedCount = wColor()
-                    wirecolorAutoProcessed = true
-                    if changedCount > 0 do btn_wire_s5.visible = true
+                btn_done_s5.visible = true -- Affiché immédiatement
+                
+                local hasBlack = false
+                for o in objects where o.wirecolor == (color 0 0 0) do ( hasBlack = true; exit )
+                if hasBlack then (
+                    lst_log_s5.items = #("⚠ Des objets ont un wirecolor noir.", "Cliquez sur le bouton pour corriger.")
+                    btn_wire_s5.visible = true
+                ) else (
+                    lst_log_s5.items = #("✔ Aucun wirecolor noir trouvé.", "Vous pouvez cliquer sur Validate pour continuer.")
                     stepStates[5] = 1
                     updateChecklistUI()
                 )
-                if wirecolorBackup.count > 0 do btn_wire_s5.visible = true
             )
             
             else if currentStep == 6 then ( for c in #(lst_log_s6, btn_lay_fix_s6, btn_done_s6) do c.visible = true )
@@ -447,10 +437,10 @@ macroScript Iconia_FileChecker
                     step9_Initialized = true
                 )
             )
-
-            -- Même si la cascade saute aussi l'étape Layers, la restauration ciblée reste accessible.
-            if currentStep >= 6 and wirecolorBackup.count > 0 do btn_wire_s5.visible = true
         )
+
+        -- ===========================================================
+        -- FONCTIONS ÉTAPE 1 : CORONA & CLEAN RESET
         -- ===========================================================
         fn collectMaterials mat collected = (
             if mat == undefined then return collected
@@ -987,9 +977,6 @@ macroScript Iconia_FileChecker
             )
             local vrayVariants = #("_V-ray", "-V-ray", " V-ray", "(V-ray)", "_v-ray", "-v-ray", " v-ray", "(v-ray)", "_V-Ray", "-V-Ray", " V-Ray", "(V-Ray)", "V-ray", "v-ray", "V-Ray", "_VRay", "-VRay", " VRay", "(VRay)", "_vray", "-vray", " vray", "(vray)", "_VRAY", "-VRAY", " VRAY", "(VRAY)", "_Vray", "-Vray", " Vray", "(Vray)", "_VRayMtl","-VRayMtl"," VRayMtl", "VRay", "vray", "VRAY", "Vray")
             for v in vrayVariants do s = substituteString s v ""
-            -- Un millésime collé à un tag moteur (ex. _2015vray) ne pouvait pas être reconnu
-            -- au premier passage. Après retrait de V-Ray/Corona, on repasse donc le filtre année.
-            s = removeYear s
             
             local prevS = ""
             while prevS != s do ( prevS = s; s = substituteString s "__" "_" )
@@ -1156,20 +1143,11 @@ macroScript Iconia_FileChecker
             )
             if sources.count == 0 then return #(0,0,0,false)
 
-            -- Les sources appartiennent au dossier de l'asset : l'affichage relatif évite de répéter
-            -- une racine très longue sur chaque ligne, sans modifier les chemins réellement déplacés.
+            -- TextBox WinForms exige CR+LF ; bit.intAsChar évite les ambiguïtés d'échappement MAXScript/.NET.
             local nl = (bit.intAsChar 13) + (bit.intAsChar 10)
-            local msg = "Maps détectées hors du dossier de l'asset /maps :" + nl + nl
-            for src in sources do (
-                local displaySrc = src
-                if (findString (toLower src) sceneLow) == 1 then (
-                    local relativeStart = scenePath.count + 1
-                    if relativeStart <= src.count then displaySrc = "\\" + (substring src relativeStart -1)
-                    else displaySrc = "\\"
-                )
-                msg += displaySrc + nl
-            )
-            msg += nl + "Déplacer ces fichiers dans :" + nl + "\\maps\\ ?"
+            local msg = "Maps détectées hors du dossier canonique /maps :" + nl + nl
+            for src in sources do msg += src + nl
+            msg += nl + "Déplacer ces fichiers dans :" + nl + targetFolder + " ?"
 
             -- queryBox est trop étroit et replie les chemins. Fenêtre large, scrollable et sans retour à la ligne.
             local form = dotNetObject "System.Windows.Forms.Form"
@@ -1522,30 +1500,9 @@ macroScript Iconia_FileChecker
         fn wColor = (   
             local r = random 0 255; local g = random 0 255; local b = random 0 255
             local changedCount = 0
-            wirecolorBackup = #()
-            for o in objects do (
-                if o.wirecolor == (color 0 0 0) then (
-                    append wirecolorBackup #(o, o.wirecolor)
-                    o.wirecolor = (color r g b)
-                    changedCount += 1
-                )
-            )
-            if changedCount > 0 then lst_log_s5.items = #("✔ Correction automatique : " + (changedCount as string) + " wirecolor(s) noir(s) remplacé(s).", "Utilisez UNDO WIRECOLOR pour restaurer uniquement les couleurs d'origine.")
-            else lst_log_s5.items = #("✔ Aucun wirecolor noir trouvé.", "Aucune correction nécessaire.")
-            changedCount
-        )
-
-        fn undoWirecolor = (
-            local restoredCount = 0
-            for item in wirecolorBackup do (
-                local node = item[1]
-                local originalColor = item[2]
-                if isValidNode node do try(node.wirecolor = originalColor; restoredCount += 1)catch()
-            )
-            wirecolorBackup = #()
-            btn_wire_s5.visible = false
-            lst_log_s5.items = #("↩ Undo Wirecolor : " + (restoredCount as string) + " couleur(s) d'origine restaurée(s).", "Vous pouvez maintenant modifier les wirecolors manuellement ou valider l'étape.")
-            restoredCount
+            for o in objects do ( if o.wirecolor == (color 0 0 0) then ( o.wirecolor = (color r g b); changedCount += 1 ) )
+            if changedCount > 0 then lst_log_s5.items = #("Validé : " + (changedCount as string) + " wirecolors changés.")
+            else lst_log_s5.items = #("Validé : Aucun wirecolor noir trouvé.")
         )
 
         fn listAllLayers = (
@@ -1563,60 +1520,9 @@ macroScript Iconia_FileChecker
             return n
         )
         
-        fn clearSearchReplaceState = (
-            replacePending = false
-            replacePreviewActive = false
-            replacePendingSearch = ""
-            replacePendingReplacement = ""
-            replacePendingTargets = #()
-            replacePreviewOriginalNames = #()
-            btn_n_replace.text = "Search & Replace"
-            btn_n_replace.width = 260
-            btn_n_replace_cancel.visible = false
-        )
-
-        fn cancelSearchReplacePreview = (
-            if replacePreviewActive do (
-                undo off (
-                    for item in replacePreviewOriginalNames do (
-                        local obj = item[1]
-                        if isValidNode obj do try(obj.name = item[2])catch()
-                    )
-                )
-                updateNameList()
-            )
-            clearSearchReplaceState()
-        )
-
-        fn resetSearchReplaceConfirmation = (
-            cancelSearchReplacePreview()
-        )
-
-        fn getSearchReplaceTargets = (
-            local targets = #()
-            -- La sélection explicite dans la liste est prioritaire, puis celle de la scène.
-            if lst_names_s7.selection.isEmpty == false then (
-                local selIndices = lst_names_s7.selection as array
-                for i in selIndices do (
-                    local obj = getNodeByName lst_names_s7.items[i]
-                    if obj != undefined do appendIfUnique targets obj
-                )
-            ) else if selection.count > 0 then (
-                for obj in selection where isValidNode obj do appendIfUnique targets obj
-            ) else (
-                for obj in objects where isValidNode obj do append targets obj
-            )
-            targets
-        )
-
         fn updateNameList = (
-            -- Réinitialisation forcée : MultiListBox peut conserver des indices sélectionnés
-            -- qui désignent les anciens noms après un renommage.
-            try(lst_names_s7.selection = #{})catch()
-            local arr = for o in objects where isValidNode o collect o.name
-            lst_names_s7.items = #()
+            local arr = for o in objects collect o.name
             lst_names_s7.items = sort arr
-            try(lst_names_s7.selection = #{})catch()
         )
         
         fn renameItemFromList itemName = (
@@ -1673,19 +1579,15 @@ macroScript Iconia_FileChecker
             local imagePath = undefined
             for ext in imgextensions do ( if doesFileExist (imgfolder + imgbaseName + ext) do imagePath = (imgfolder + imgbaseName + ext) )
             
-            -- L'étape Preview est la précondition : pas de seconde alerte redondante ici.
-            if imagePath == undefined then return #()
+            if imagePath == undefined then ( messageBox "No matching image found (jpg/png) for AI."; return #() )
             
             local pythonExe = "C:\\Users\\" + sysInfo.username + "\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe"
             local scriptDir = "C:\\Users\\" + sysInfo.username + "\\Documents\\3ds Max 2024\\Scripts\\"
-            local apiDir = "L:\\0-Documentation\\3DS Max Configuration\\3DS Max Plugins\\Antoine\\API\\"
             local pythonScript = scriptDir + "_MyTools_Files_MapSearch.py"
-            local keywordsFile = apiDir + "MaxStack-MaxStack_FileChecker_Keywords_List.txt"
+            local keywordsFile = scriptDir + "MaxStack-MaxStack_FileChecker_Keywords_List.txt"
             local tempFile = getDir #temp + "\\object_list.txt"
             
             if not (doesFileExist pythonExe) then ( messageBox "Python introuvable"; return #() )
-            if not (doesFileExist pythonScript) then ( messageBox ("Script AI introuvable :\n" + pythonScript) title:"AI Search"; return #() )
-            if not (doesFileExist keywordsFile) then ( messageBox ("Bibliothèque de mots-clés introuvable :\n" + keywordsFile) title:"AI Search"; return #() )
             if doesFileExist tempFile then deleteFile tempFile
             
             local args = "/c \"\"" + pythonExe + "\" \"" + pythonScript + "\" \"" + imagePath + "\" \"" + tempFile + "\" \"" + keywordsFile + "\"\""
@@ -1694,26 +1596,8 @@ macroScript Iconia_FileChecker
             p.Start(); p.WaitForExit()
             
             local keywordsFound = #()
-            if doesFileExist tempFile then (
-                local f = openFile tempFile
-                local outputLines = #()
-                while not eof f do append outputLines (readLine f)
-                close f
-                if outputLines.count > 0 and outputLines[1] == "__AI_SEARCH_ERROR__" then (
-                    local errorText = ""
-                    for i = 2 to outputLines.count do errorText += outputLines[i] + "\n"
-                    messageBox errorText title:"AI Search — modèles indisponibles"
-                    return #()
-                )
-                for line in outputLines do (
-                    local cleanLine = trimLeft (trimRight line)
-                    if cleanLine != "" do append keywordsFound cleanLine
-                )
-                return keywordsFound
-            ) else (
-                messageBox "AI Search n'a créé aucun résultat." title:"AI Search"
-                return #()
-            )
+            if doesFileExist tempFile then ( local f = openFile tempFile; while not eof f do ( local line = readLine f; if (trimLeft (trimRight line)) != "" then append keywordsFound line ); close f; return keywordsFound )
+            else ( messageBox "Erreur AI"; return #() )
         )
 
         fn initStep9Keywords = (
@@ -1825,14 +1709,9 @@ macroScript Iconia_FileChecker
                         if mapsOk then ( stepStates[3] = 1; newStep = 4; autoChecking = true )
                     )
                     if newStep == 5 and stepStates[5] == 0 then (
-                        -- Correction immédiate puis passage automatique à l'étape suivante.
-                        -- Le bouton Undo reste disponible dans l'étape suivante tant qu'une restauration est possible.
-                        local changedCount = 0
-                        undo "Auto-fix black wirecolor" on changedCount = wColor()
-                        wirecolorAutoProcessed = true
-                        stepStates[5] = 1
-                        newStep = 6
-                        autoChecking = true
+                        local hasBlack = false
+                        for o in objects where o.wirecolor == (color 0 0 0) do ( hasBlack = true; exit )
+                        if not hasBlack then ( stepStates[5] = 1; newStep = 6; autoChecking = true )
                     )
                     if newStep == 6 and stepStates[6] == 0 then (
                         if LayerManager.count <= 1 then ( stepStates[6] = 1; newStep = 7; autoChecking = true )
@@ -1879,16 +1758,8 @@ macroScript Iconia_FileChecker
             switchStep 1 
         )
 
-        on rlMasterChecker close do ( if replacePreviewActive do cancelSearchReplacePreview() )
-
-        on btn_next pressed do ( 
-            if currentStep == 7 and replacePreviewActive do cancelSearchReplacePreview()
-            if currentStep < 9 do switchStep (currentStep + 1) 
-        )
-        on btn_prev pressed do ( 
-            if currentStep == 7 and replacePreviewActive do cancelSearchReplacePreview()
-            if currentStep > 1 do switchStep (currentStep - 1) 
-        )
+        on btn_next pressed do ( if currentStep < 9 do switchStep (currentStep + 1) )
+        on btn_prev pressed do ( if currentStep > 1 do switchStep (currentStep - 1) )
 
         -- EVENTS S1 (CORONA & RESET)
         on btn_main_s1 pressed do ( doCheckCorona() )
@@ -1967,7 +1838,7 @@ macroScript Iconia_FileChecker
         on btn_done_s4 pressed do ( stepStates[4] = 1; updateChecklistUI(); switchStep 5 )
 
         -- EVENTS S5 (WIRECOLOR)
-        on btn_wire_s5 pressed do ( undo "Restore Wirecolor" on undoWirecolor() )
+        on btn_wire_s5 pressed do ( undo "Wirecolor" on wColor() )
         on btn_done_s5 pressed do ( stepStates[5] = 1; updateChecklistUI(); switchStep 6 )
 
         -- EVENTS S6 (LAYERS)
@@ -1988,14 +1859,12 @@ macroScript Iconia_FileChecker
 
         -- EVENTS S7 (NAMES)
         on btn_n_all pressed do (
-            if replacePreviewActive do cancelSearchReplacePreview()
             local pfx = edt_n_pref.text; local base = edt_n_base.text
             undo "Name All" on ( for o in objects do ( if base != "" then o.name = pfx + "_" + base else if (findString o.name pfx) == undefined do o.name = pfx + "_" + o.name ) )
             updateNameList()
         )
         
         on btn_n_sel pressed do (
-            if replacePreviewActive do cancelSearchReplacePreview()
             local pfx = edt_n_pref.text; local base = edt_n_base.text
             local targetObjs = #()
             
@@ -2021,69 +1890,26 @@ macroScript Iconia_FileChecker
         )
         
         on btn_n_grp pressed do (
-            if replacePreviewActive do cancelSearchReplacePreview()
             local pfx = edt_n_pref.text; local Selmain = #()
             for o in objects do ( if o.parent == undefined do append Selmain o )
             undo "Name Group" on ( if Selmain.count >= 2 then ( for s in Selmain do s.name = pfx + "_" + s.name ) else ( for s in Selmain do s.name = pfx ) )
             updateNameList()
         )
         
-        on edt_n_search changed txt do resetSearchReplaceConfirmation()
-        on edt_n_repl changed txt do resetSearchReplaceConfirmation()
-
         on btn_n_replace pressed do (
-            local sText = edt_n_search.text
-            local rText = edt_n_repl.text
-            if sText == "" then (
-                resetSearchReplaceConfirmation()
-            ) else if not replacePending or replacePendingSearch != sText or replacePendingReplacement != rText then (
-                -- Premier clic : aperçu temporaire, jamais une validation définitive.
-                cancelSearchReplacePreview()
-                replacePendingTargets = getSearchReplaceTargets()
-                replacePendingSearch = sText
-                replacePendingReplacement = rText
-                replacePreviewOriginalNames = #()
-                undo off (
-                    for o in replacePendingTargets where isValidNode o do (
-                        if matchPattern o.name pattern:("*" + replacePendingSearch + "*") do (
-                            append replacePreviewOriginalNames #(o, o.name)
-                            o.name = substituteString o.name replacePendingSearch replacePendingReplacement
-                        )
-                    )
+            local sText = edt_n_search.text; local rText = edt_n_repl.text
+            if sText != "" do ( 
+                undo "Search Replace" on ( 
+                    for o in objects do (
+                        if matchPattern o.name pattern:("*"+sText+"*") do o.name = substituteString o.name sText rText 
+                    ) 
                 )
-                replacePending = true
-                replacePreviewActive = true
-                btn_n_replace.text = "APPLY"
-                btn_n_replace.width = 125
-                btn_n_replace_cancel.visible = true
-                updateNameList()
-            ) else (
-                -- Second clic : on annule l'aperçu, puis on réapplique dans un Undo définitif.
-                local finalTargets = replacePendingTargets
-                local finalSearch = replacePendingSearch
-                local finalReplacement = replacePendingReplacement
-                cancelSearchReplacePreview()
-                undo "Search Replace" on (
-                    for o in finalTargets where isValidNode o do (
-                        if matchPattern o.name pattern:("*" + finalSearch + "*") do o.name = substituteString o.name finalSearch finalReplacement
-                    )
-                )
-                updateNameList()
+                updateNameList() 
             )
         )
         
-        on btn_n_replace_cancel pressed do cancelSearchReplacePreview()
-
-        on lst_names_s7 doubleClicked idx do (
-            if replacePreviewActive do cancelSearchReplacePreview()
-            if idx > 0 do renameItemFromList lst_names_s7.items[idx]
-        )
-        on btn_done_s7 pressed do (
-            if replacePreviewActive do cancelSearchReplacePreview()
-            stepStates[7] = 1
-            updateChecklistUI()
-            switchStep 8
-        )
+        on lst_names_s7 doubleClicked idx do ( if idx > 0 do renameItemFromList lst_names_s7.items[idx] )
+        on btn_done_s7 pressed do ( stepStates[7] = 1; updateChecklistUI(); switchStep 8 )
 
         -- EVENTS S8 (PREVIEW)
         on btn_prev_fix_s8 pressed do (
