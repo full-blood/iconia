@@ -98,7 +98,7 @@ set "installfile=%outdir%\install_scripts.ms"
 >>"%installfile%" echo         local dstDir = getFilenamePath dst
 >>"%installfile%" echo         if not doesFileExist dstDir then makeDir dstDir
 >>"%installfile%" echo         if doesFileExist dst then deleteFile dst
->>"%installfile%" echo         (dotNetClass "System.IO.File").Copy src dst
+>>"%installfile%" echo         (dotNetClass "System.IO.File").Copy src dst true
 >>"%installfile%" echo         format "copied %% to %%\n" src dst
 >>"%installfile%" echo     ) else (
 >>"%installfile%" echo         format "WARNING: not found: %%\n" src
