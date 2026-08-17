@@ -49,12 +49,10 @@
         return false 
     )
 
-    -- Config GitHub
-    local githubUser    = "full-blood"
-    local githubRepo    = "iconia"
-    local branch        = "main"
-    local baseRawURL    = "https://raw.githubusercontent.com/" + githubUser + "/" + githubRepo + "/" + branch + "/"
-    local releasesURL   = "https://github.com/" + githubUser + "/" + githubRepo + "/releases/latest"
+    -- Source des mises a jour : partage LAN (UNC pour ne pas dependre de L:)
+    local updateRoot        = "\\\\CgLibrary\\CgLibrary\\0-Documentation\\3DS Max Configuration\\3DS Max Plugins\\Antoine\\API\\Iconia\\"
+    local remoteVersionFile = updateRoot + "version.txt"
+    local remoteMZPFile     = updateRoot + "Iconia.mzp"
 
     -- Version locale
     local root        = (getDir #userScripts) + "\\Iconia"
@@ -69,15 +67,12 @@
 
     -- Check en arriere-plan
     try (
-        local securityProtocolType = dotNetClass "System.Net.SecurityProtocolType"
-        local servicePointManager = dotNetClass "System.Net.ServicePointManager"
-        servicePointManager.SecurityProtocol = securityProtocolType.Tls12
-
-        local http = dotNetObject "System.Net.WebClient"
-        http.Headers.Add "User-Agent" "MaxScript"
-        
-        local cacheBuster = (random 1 9999999) as string
-        local remoteVer = trimRight (http.DownloadString (baseRawURL + "version.txt?t=" + cacheBuster))
+        local remoteVer = ""
+        if doesFileExist remoteVersionFile then (
+            local remoteFile = openFile remoteVersionFile mode:"r"
+            remoteVer = trimRight (readLine remoteFile)
+            close remoteFile
+        )
 
         -- Si on trouve une mise a jour, on propose a l'utilisateur
         if (remoteVer != "") and (isNewerVersion remoteVer localVer) then (
@@ -85,19 +80,18 @@
             
             -- queryBox pose la question. Si l'utilisateur clique "Oui", ca lance l'update.
             if (queryBox msg title:"Mise a jour Iconia" beep:true) then (
-                print "Telechargement de la mise a jour menu Iconia..."
+                print "Copie de la mise a jour Iconia depuis le LAN..."
                 
                 local tempDir  = getDir #temp
                 local mzpPath  = tempDir + "\\Iconia_update.mzp"
-                local mzpURL = "https://github.com/" + githubUser + "/" + githubRepo + "/releases/latest/download/Iconia.mzp"
-                
-                http.DownloadFile mzpURL mzpPath
+                if doesFileExist mzpPath do deleteFile mzpPath
+                copyFile remoteMZPFile mzpPath
 
                 if doesFileExist mzpPath then (
                     fileIn mzpPath
                     -- Le message de succes du fileIn prendra le relais
                 ) else (
-                    messageBox "Echec du telechargement.\nVous pouvez mettre a jour manuellement via le menu 'A propos'." title:"Erreur menu Iconia"
+                    messageBox ("Echec de la copie depuis le partage LAN.\nVerifiez l'acces a :\n" + updateRoot) title:"Erreur menu Iconia"
                 )
             )
         )

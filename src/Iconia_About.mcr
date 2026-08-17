@@ -10,11 +10,10 @@ macroScript Iconia_About category:"Iconia" tooltip:"About"
     -- -----------------------------------------------
     -- Config
     -- -----------------------------------------------
-    local githubUser    = "full-blood"
-    local githubRepo    = "iconia"
-    local branch        = "main"
-    local baseRawURL    = "https://raw.githubusercontent.com/" + githubUser + "/" + githubRepo + "/" + branch + "/"
-    local releasesURL   = "https://github.com/" + githubUser + "/" + githubRepo + "/releases/latest"
+    -- Source des mises a jour : partage LAN (UNC pour ne pas dependre de L:)
+    local updateRoot        = "\\\\CgLibrary\\CgLibrary\\0-Documentation\\3DS Max Configuration\\3DS Max Plugins\\Antoine\\API\\Iconia\\"
+    local remoteVersionFile = updateRoot + "version.txt"
+    local remoteMZPFile     = updateRoot + "Iconia.mzp"
 
     -- -----------------------------------------------
     -- Version locale
@@ -54,18 +53,12 @@ macroScript Iconia_About category:"Iconia" tooltip:"About"
     local fetchOK     = false
 
     try (
-        -- Forcer TLS 1.2 pour l'API GitHub
-        local securityProtocolType = dotNetClass "System.Net.SecurityProtocolType"
-        local servicePointManager = dotNetClass "System.Net.ServicePointManager"
-        servicePointManager.SecurityProtocol = securityProtocolType.Tls12
-
-        local http = dotNetObject "System.Net.WebClient"
-        http.Headers.Add "User-Agent" "MaxScript"
-        
-        -- Anti-Cache
-        local cacheBuster = (random 1 9999999) as string
-        remoteVer = trimRight (http.DownloadString (baseRawURL + "version.txt?t=" + cacheBuster))
-        fetchOK   = true
+        if doesFileExist remoteVersionFile then (
+            local remoteFile = openFile remoteVersionFile mode:"r"
+            remoteVer = trimRight (readLine remoteFile)
+            close remoteFile
+            fetchOK = true
+        )
     ) catch (
         remoteVer = ""
     )
@@ -101,28 +94,22 @@ macroScript Iconia_About category:"Iconia" tooltip:"About"
     if doUpdate then (
         try (
             -- /!\ LIGNES CRUCIALES POUR GITHUB : Forcer TLS 1.2 /!\
-            local securityProtocolType = dotNetClass "System.Net.SecurityProtocolType"
-            local servicePointManager = dotNetClass "System.Net.ServicePointManager"
-            servicePointManager.SecurityProtocol = securityProtocolType.Tls12
-
-            local http     = dotNetObject "System.Net.WebClient"
-            http.Headers.Add "User-Agent" "MaxScript"
             local tempDir  = getDir #temp
             local mzpPath  = tempDir + "\\Iconia_update.mzp"
 
             -- Télécharge le .mzp depuis GitHub Releases (asset direct)
-            local mzpURL = "https://github.com/" + githubUser + "/" + githubRepo + "/releases/latest/download/Iconia.mzp"
-            http.DownloadFile mzpURL mzpPath
+            if doesFileExist mzpPath do deleteFile mzpPath
+            copyFile remoteMZPFile mzpPath
 
             if doesFileExist mzpPath then (
                 -- fileIn lance l'installation de façon plus fiable que installPkg
                 fileIn mzpPath
                 messageBox ("Iconia mis à jour vers v" + remoteVer + ".\nSi le menu n'est pas à jour, relancez 3ds Max pour appliquer.") title:"Iconia Update"
             ) else (
-                messageBox "Téléchargement échoué. Essayez manuellement :\n" + releasesURL title:"Erreur"
+                messageBox ("Copie depuis le partage LAN echouee.\nVerifiez l'acces a :\n" + updateRoot) title:"Erreur"
             )
         ) catch (
-            messageBox ("Erreur lors du téléchargement :\n" + (getCurrentException()) + "\n\nLien manuel :\n" + releasesURL) title:"Erreur"
+            messageBox ("Erreur lors de la copie LAN :\n" + (getCurrentException()) + "\n\nPartage :\n" + updateRoot) title:"Erreur"
         )
     )
 )

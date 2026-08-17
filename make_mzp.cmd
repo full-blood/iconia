@@ -8,6 +8,7 @@ setlocal EnableDelayedExpansion
 set "repodir=%~dp0"
 set "srcdir=%~dp0src"
 set "outdir=%~dp0MAXScript_ZIP_Package"
+set "lanDir=\\CgLibrary\CgLibrary\0-Documentation\3DS Max Configuration\3DS Max Plugins\Antoine\API\Iconia"
 set "base=Iconia"
 set count=1
 
@@ -165,8 +166,8 @@ for %%F in ("%srcdir%\*") do (
 >>"%installfile%" echo     format "Erreur lors du chargement du menu : %%\n" (getCurrentException())
 >>"%installfile%" echo )
 >>"%installfile%" echo.
->>"%installfile%" echo print "Installation terminée."
->>"%installfile%" echo messageBox "Iconia v%currentver% installée avec succès !\n\nLe menu a été mis à jour."
+>>"%installfile%" echo print "Installation termin?e."
+>>"%installfile%" echo messageBox "Iconia v%currentver% install?e avec succ?s !\n\nLe menu a ?t? mis ? jour."
 >>"%installfile%" echo print "-- END --"
 
 echo install_scripts.ms generated.
@@ -196,6 +197,30 @@ popd
 copy /Y "%mzpfile%" "%repodir%Iconia.mzp" >nul
 echo Iconia.mzp copie a la racine.
 
+:: --- Publication LAN ---
+:: Le paquet est copie avant version.txt : les postes clients ne voient la nouvelle
+:: version qu'une fois l'archive entierement disponible sur le partage.
+if not exist "%lanDir%\" (
+    echo ERREUR : partage LAN inaccessible : %lanDir%
+    echo Le build local est conserve, mais aucune mise a jour LAN n'a ete publiee.
+    goto afterLanPublish
+)
+
+echo Publication de Iconia v%currentver% sur le LAN...
+copy /Y "%mzpfile%" "%lanDir%\Iconia.mzp" >nul
+if errorlevel 1 (
+    echo ERREUR : impossible de copier Iconia.mzp sur le partage LAN.
+    goto afterLanPublish
+)
+copy /Y "%versionfile%" "%lanDir%\version.txt" >nul
+if errorlevel 1 (
+    echo ERREUR : Iconia.mzp est copie mais version.txt n'a pas pu etre publie.
+    goto afterLanPublish
+)
+echo Publication LAN terminee : %lanDir%\
+
+:afterLanPublish
+
 echo.
 echo ============================================
 echo  Build termine : Iconia v%currentver%
@@ -204,7 +229,7 @@ echo ============================================
 echo.
 
 :: --- Git push & GitHub Release ---
-set /p dopublish="Publier sur GitHub et creer la release automatique ? (o/n) : "
+set /p dopublish="Publier aussi sur GitHub et creer la release ? (o/n) : "
 if /I not "%dopublish%"=="o" goto done
 
 pushd "%repodir%"
@@ -213,19 +238,33 @@ echo.
 echo Envoi du code sur GitHub...
 git add .
 git commit -m "release v%currentver%"
+if errorlevel 1 (
+    echo ERREUR : commit Git impossible. Release GitHub annulee.
+    popd
+    goto done
+)
 git push
+if errorlevel 1 (
+    echo ERREUR : push Git impossible. Release GitHub annulee.
+    popd
+    goto done
+)
 
 :: 2. On cree la release et on attache le .mzp
 echo.
 echo Creation de la Release GitHub v%currentver%...
 gh release create "v%currentver%" "Iconia.mzp" --title "Mise a jour %currentver%" --generate-notes
-pause
+if errorlevel 1 (
+    echo ERREUR : creation de la release GitHub impossible.
+    popd
+    goto done
+)
 
 popd
 
 echo.
 echo ============================================
-echo  Succes ! Release v%currentver% publiee.
+echo  Succes ! Release GitHub v%currentver% publiee.
 echo  Verifie ici : https://github.com/full-blood/iconia/releases/latest
 echo ============================================
 
