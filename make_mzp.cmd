@@ -62,6 +62,7 @@ if /I "%dobump%"=="o" (
 ) else (
     echo On conserve la version : %currentver%
 )
+set "loaderid=Iconia_loader_%currentver:.=_%"
 echo.
 
 :: --- Copie version.txt vers outdir pour inclusion dans le MZP ---
@@ -90,7 +91,7 @@ set "installfile=%outdir%\install_scripts.ms"
 >>"%installfile%" echo.
 >>"%installfile%" echo -- Chemins cibles securises
 >>"%installfile%" echo iconiaMNXPath     = "C:\\Users\\" + sysInfo.username + "\\Autodesk\\3ds Max 2026\\User Settings\\Iconia.mnx"
->>"%installfile%" echo iconiaLoaderPath  = startupDir + "\\Iconia_loader.ms"
+>>"%installfile%" echo iconiaLoaderPath  = startupDir + "\\%loaderid%.ms"
 >>"%installfile%" echo iconiaVersionPath = scriptsDir + "\\Iconia\\version.txt"
 >>"%installfile%" echo.
 >>"%installfile%" echo fn safeCopy src dst = (
@@ -106,8 +107,13 @@ set "installfile=%outdir%\install_scripts.ms"
 >>"%installfile%" echo )
 >>"%installfile%" echo.
 >>"%installfile%" echo safeCopy (tempDir + "Iconia.mnx")         iconiaMNXPath
->>"%installfile%" echo -- Le loader actif est verrouille pendant l'installation : on installe son successeur.
->>"%installfile%" echo safeCopy (tempDir + "Iconia_loader.ms")   (startupDir + "\\Iconia_loader_LAN.ms")
+>>"%installfile%" echo -- Les loaders en cours peuvent etre verrouilles : leur suppression ne doit jamais bloquer l'update.
+>>"%installfile%" echo oldLoaders = getFiles (startupDir + "\\Iconia_loader*.ms")
+>>"%installfile%" echo for f in oldLoaders where not ((toLower f) == (toLower iconiaLoaderPath)) do (
+>>"%installfile%" echo     try (deleteFile f) catch (format "Loader conserve (verrouille) : %%\n" f)
+>>"%installfile%" echo )
+>>"%installfile%" echo -- Le nom versionne evite d'ecraser le loader actuellement execute.
+>>"%installfile%" echo safeCopy (tempDir + "Iconia_loader.ms")   iconiaLoaderPath
 >>"%installfile%" echo safeCopy (tempDir + "version.txt")        iconiaVersionPath
 >>"%installfile%" echo.
 >>"%installfile%" echo -- -----------------------------------------------
