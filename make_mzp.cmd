@@ -106,7 +106,8 @@ set "installfile=%outdir%\install_scripts.ms"
 >>"%installfile%" echo )
 >>"%installfile%" echo.
 >>"%installfile%" echo safeCopy (tempDir + "Iconia.mnx")         iconiaMNXPath
->>"%installfile%" echo safeCopy (tempDir + "Iconia_loader.ms")   iconiaLoaderPath
+>>"%installfile%" echo -- Le loader actif est verrouille pendant l'installation : on installe son successeur.
+>>"%installfile%" echo safeCopy (tempDir + "Iconia_loader.ms")   (startupDir + "\\Iconia_loader_LAN.ms")
 >>"%installfile%" echo safeCopy (tempDir + "version.txt")        iconiaVersionPath
 >>"%installfile%" echo.
 >>"%installfile%" echo -- -----------------------------------------------
