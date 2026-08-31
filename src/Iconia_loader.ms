@@ -76,11 +76,11 @@
 
         -- Si on trouve une mise a jour, on propose a l'utilisateur
         if (remoteVer != "") and (isNewerVersion remoteVer localVer) then (
-            local msg = "Une nouvelle version du menu Iconia (v" + remoteVer + ") est disponible !\n(Version actuelle : " + localVer + ")\n\nVoulez-vous la telecharger et l'installer maintenant ?"
+            local msg = "Une nouvelle version du menu Iconia (v" + remoteVer + ") est disponible !\n(Version actuelle : " + localVer + ")\n\nVoulez-vous la télécharger et l'installer maintenant ?"
             
             -- queryBox pose la question. Si l'utilisateur clique "Oui", ca lance l'update.
-            if (queryBox msg title:"Mise a jour Iconia" beep:true) then (
-                print "Copie de la mise a jour Iconia depuis le LAN..."
+            if (queryBox msg title:"Mise à jour Iconia" beep:true) then (
+                print "Copie de la mise à jour Iconia depuis le LAN..."
                 
                 local tempDir  = getDir #temp
                 local mzpPath  = tempDir + "\\Iconia_update.mzp"

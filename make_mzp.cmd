@@ -168,13 +168,13 @@ for %%F in ("%srcdir%\*") do (
 >>"%installfile%" echo try (
 >>"%installfile%" echo     -- On execute le loader qui vient d'etre installe pour inscrire la variable d'environnement
 >>"%installfile%" echo     fileIn iconiaLoaderPath
->>"%installfile%" echo     print "Menu Iconia charge avec succes !"
+>>"%installfile%" echo     print "Menu Iconia chargé avec succes !"
 >>"%installfile%" echo ) catch (
 >>"%installfile%" echo     format "Erreur lors du chargement du menu : %%\n" (getCurrentException())
 >>"%installfile%" echo )
 >>"%installfile%" echo.
 >>"%installfile%" echo print "Installation termin?e."
->>"%installfile%" echo messageBox "Iconia v%currentver% install?e avec succ?s !\n\nLe menu a ?t? mis ? jour."
+>>"%installfile%" echo messageBox "Iconia v%currentver% installée avec succès !\n\nLe menu a été mis à jour."
 >>"%installfile%" echo print "-- END --"
 
 echo install_scripts.ms generated.

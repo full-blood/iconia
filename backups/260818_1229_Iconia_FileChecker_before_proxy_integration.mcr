@@ -299,7 +299,6 @@ macroScript Iconia_FileChecker
         button btn_ai_s9 "AI Search" pos:[-1000,-1000] width:100 height:45 
         button btn_done_s9 "SAVE OK FILE" pos:[-1000,-1000] width:150 height:45 
         button btn_final_validate_s9 "FINAL VALIDATE ✔" pos:[-1000,-1000] width:140 height:60
-        button btn_convert_proxy_s9 "CONVERT TO PROXY" pos:[-1000,-1000] width:160 height:60
 
         label lbl_key_s9 "Keywords:" pos:[-1000,-1000] width:590 height:16 
         dotNetControl cbx_k1 "System.Windows.Forms.ComboBox" pos:[-1000,-1000] width:180 height:21 
@@ -376,7 +375,7 @@ macroScript Iconia_FileChecker
                 lst_log_s6, btn_lay_fix_s6, btn_done_s6,
                 lbl_n_pref, edt_n_pref, lbl_n_base, edt_n_base, btn_n_all, btn_n_grp, btn_n_sel, lbl_n_search, edt_n_search, lbl_n_repl, edt_n_repl, btn_n_replace, btn_n_replace_cancel, btn_done_s7, lst_names_s7,
                 lst_log_s8, btn_prev_fix_s8, btn_done_s8,
-                lbl_cat_s9, cbx_cat, lbl_subcat_s9, cbx_subcat, btn_ai_s9, btn_done_s9, btn_convert_proxy_s9, btn_final_validate_s9, lbl_key_s9, cbx_k1, cbx_k2, cbx_k3, cbx_k4, cbx_k5, cbx_k6, cbx_k7, cbx_k8, cbx_k9, cbx_k10, cbx_k11, cbx_k12, cbx_k13, cbx_k14, cbx_k15
+                lbl_cat_s9, cbx_cat, lbl_subcat_s9, cbx_subcat, btn_ai_s9, btn_done_s9, btn_final_validate_s9, lbl_key_s9, cbx_k1, cbx_k2, cbx_k3, cbx_k4, cbx_k5, cbx_k6, cbx_k7, cbx_k8, cbx_k9, cbx_k10, cbx_k11, cbx_k12, cbx_k13, cbx_k14, cbx_k15
             )
             for c in allCtrls where c != undefined do try(c.visible = false)catch()
 			
@@ -436,12 +435,12 @@ macroScript Iconia_FileChecker
             
             else if currentStep == 9 then ( 
                 lbl_cat_s9.pos=[180,20]; cbx_cat.pos=[260,19]; lbl_subcat_s9.pos=[180,45]; cbx_subcat.pos=[260,43]
-                btn_ai_s9.pos=[480,18]; btn_done_s9.pos=[600,18]; btn_convert_proxy_s9.pos=[460,515]; btn_final_validate_s9.pos=[630,515]; lbl_key_s9.pos=[180,80]
+                btn_ai_s9.pos=[480,18]; btn_done_s9.pos=[600,18]; btn_final_validate_s9.pos=[630,515]; lbl_key_s9.pos=[180,80]
                 cbx_k1.pos=[180,100]; cbx_k2.pos=[180,125]; cbx_k3.pos=[180,150]; cbx_k4.pos=[180,175]; cbx_k5.pos=[180,200]
                 cbx_k6.pos=[380,100]; cbx_k7.pos=[380,125]; cbx_k8.pos=[380,150]; cbx_k9.pos=[380,175]; cbx_k10.pos=[380,200]
                 cbx_k11.pos=[580,100]; cbx_k12.pos=[580,125]; cbx_k13.pos=[580,150]; cbx_k14.pos=[580,175]; cbx_k15.pos=[580,200]
                 
-                for c in #(lbl_cat_s9, cbx_cat, lbl_subcat_s9, cbx_subcat, btn_ai_s9, btn_done_s9, btn_convert_proxy_s9, btn_final_validate_s9, lbl_key_s9, cbx_k1, cbx_k2, cbx_k3, cbx_k4, cbx_k5, cbx_k6, cbx_k7, cbx_k8, cbx_k9, cbx_k10, cbx_k11, cbx_k12, cbx_k13, cbx_k14, cbx_k15) do c.visible = true 
+                for c in #(lbl_cat_s9, cbx_cat, lbl_subcat_s9, cbx_subcat, btn_ai_s9, btn_done_s9, btn_final_validate_s9, lbl_key_s9, cbx_k1, cbx_k2, cbx_k3, cbx_k4, cbx_k5, cbx_k6, cbx_k7, cbx_k8, cbx_k9, cbx_k10, cbx_k11, cbx_k12, cbx_k13, cbx_k14, cbx_k15) do c.visible = true 
                 
                 if not step9_Initialized do (
                     initStep9Keywords()
@@ -2171,144 +2170,6 @@ macroScript Iconia_FileChecker
 				return false
 			)
 		)
-
-        -- ===========================================================
-        -- CORONA PROXY — validé séparément sous 3ds Max 2026
-        -- Une conversion réussie réindexe automatiquement le CHECKED_OK
-        -- afin que l'API renseigne proxy_suffix="_proxy" pour la vignette.
-        -- ===========================================================
-        fn icpSanitizeFilename value = (
-            local clean = value as string
-            for illegal in #("\\", "/", ":", "*", "?", "\"", "<", ">", "|") do clean = substituteString clean illegal "_"
-            clean
-        )
-
-        fn icpGetProxyCandidates = (
-            local result = #()
-            for node in objects where isValidNode node do (
-                if (superClassOf node == GeometryClass) and not (isKindOf node CProxy) do append result node
-            )
-            result
-        )
-
-        fn icpConvertSceneToProxy = (
-            if maxFileName == "" or maxFilePath == "" then (
-                messageBox "Enregistrez d'abord le .max source avant la conversion." title:"CONVERT TO PROXY"
-                return false
-            )
-
-            local sourcePath = maxFilePath + maxFileName
-            local sourceStem = getFilenameFile maxFileName
-            if matchPattern sourceStem pattern:"*_proxy" ignoreCase:true then (
-                messageBox "Ce fichier semble déjà être une scène proxy. Ouvrez le .max source sans proxy." title:"CONVERT TO PROXY"
-                return false
-            )
-
-            -- Le sidecar est la clé stable pour l'upsert de la bibliothèque.
-            local txtPath = maxFilePath + maxFileName + "_CHECKED_OK.txt"
-            if not doesFileExist txtPath then (
-                messageBox "Exécutez d'abord FINAL VALIDATE pour créer le fichier CHECKED_OK et l'index de bibliothèque." title:"CONVERT TO PROXY"
-                return false
-            )
-
-            local candidates = icpGetProxyCandidates()
-            if candidates.count == 0 then (
-                messageBox "Aucune géométrie source éligible à convertir." title:"CONVERT TO PROXY"
-                return false
-            )
-
-            local proxyScenePath = maxFilePath + sourceStem + "_proxy.max"
-            local cgeoPaths = #()
-            for node in candidates do append cgeoPaths (maxFilePath + "crp_" + icpSanitizeFilename node.name + ".cgeo")
-            local existingOutputs = #()
-            for path in cgeoPaths where doesFileExist path do append existingOutputs path
-            if doesFileExist proxyScenePath do append existingOutputs proxyScenePath
-            if existingOutputs.count > 0 then (
-                local warning = "Les fichiers suivants existent déjà et seront écrasés :\n\n"
-                for path in existingOutputs do warning += path + "\n"
-                warning += "\nContinuer ?"
-                if not (queryBox warning title:"CONVERT TO PROXY — fichiers existants" beep:true) do return false
-            )
-
-            -- Sauvegarde impérative de la scène source avant toute modification.
-            if not saveMaxFile sourcePath quiet:true then (
-                messageBox ("Impossible de sauvegarder le .max source :\n" + sourcePath) title:"CONVERT TO PROXY"
-                return false
-            )
-
-            local converted = #()
-            local skipped = #()
-            undo "Convert Scene To Corona Proxies" on (
-                for index = 1 to candidates.count do (
-                    local sourceNode = candidates[index]
-                    local cgeoPath = cgeoPaths[index]
-                    if isValidNode sourceNode then (
-                        local originalName = sourceNode.name
-                        local originalTransform = sourceNode.transform
-                        local originalParent = sourceNode.parent
-                        local originalLayer = sourceNode.layer
-                        local originalWireColor = sourceNode.wireColor
-                        local originalVisibility = sourceNode.visibility
-                        local originalHidden = sourceNode.isHidden
-                        local newProxy = undefined
-                        try(
-                            if doesFileExist cgeoPath do deleteFile cgeoPath
-                            -- Export statique à la première frame; Corona retourne 0,
-                            -- le node est récupéré ensuite par son filename exact.
-                            at time animationRange.start CProxy.ProxyFp.fromScene (CProxy()) sourceNode cgeoPath
-                            for candidateProxy in objects do (
-                                if (try(candidateProxy.filename == cgeoPath)catch(false)) do newProxy = candidateProxy
-                            )
-                        )catch(
-                            append skipped (originalName + " : " + (getCurrentException() as string))
-                        )
-
-                        if newProxy != undefined and isValidNode newProxy and doesFileExist cgeoPath then (
-                            newProxy.name = "crp_" + originalName
-                            if originalParent != undefined and isValidNode originalParent do newProxy.parent = originalParent
-                            newProxy.transform = originalTransform
-                            if originalLayer != undefined do originalLayer.addNode newProxy
-                            newProxy.wireColor = originalWireColor
-                            newProxy.visibility = originalVisibility
-                            newProxy.isHidden = originalHidden
-                            try(newProxy.previzType = 2)catch(append skipped (originalName + " : Point Cloud non configuré"))
-                            delete sourceNode
-                            append converted #("crp_" + originalName, cgeoPath)
-                        ) else (
-                            append skipped (originalName + " : export .cgeo ou proxy échoué")
-                            if doesFileExist cgeoPath do deleteFile cgeoPath
-                        )
-                    ) else append skipped ("Node invalide : " + (index as string))
-                )
-            )
-
-            if converted.count == 0 then (
-                messageBox "Aucun proxy n'a été créé. Le .max source reste sauvegardé, sans proxy." title:"CONVERT TO PROXY"
-                return false
-            )
-            if not saveMaxFile proxyScenePath quiet:true then (
-                messageBox ("Les .cgeo sont créés, mais la sauvegarde proxy a échoué :\n" + proxyScenePath + "\n\nLe .max source sans proxy reste protégé :\n" + sourcePath) title:"CONVERT TO PROXY"
-                return false
-            )
-
-            -- Réindexation silencieuse : le serveur détecte _proxy.max et active l'option PROXY dans Library.html.
-            notifyLibraryAddAsset txtPath
-            messageBox (
-                "Conversion terminée.\n\n" +
-                "Source sans proxy :\n" + maxFileName + "\n\n" +
-                "Scène proxy :\n" + sourceStem + "_proxy.max\n\n" +
-                "Proxies créés : " + (converted.count as string) + "\n" +
-                "Ignorés / avertissements : " + (skipped.count as string)
-            ) title:"CONVERT TO PROXY"
-
-            -- Le résumé est vu ; on ferme ensuite le rollout, puis l'utilisateur choisit si Max reste ouvert.
-            local closeChoice = yesNoCancelBox "Conversion Proxy terminée.\n\nVoulez-vous fermer 3ds Max ?\n\nOui = Fermer 3ds Max\nNon = Laisser 3ds Max ouvert" title:"CONVERT TO PROXY"
-            try(DestroyDialog rlMasterChecker)catch()
-            if closeChoice == #yes do quitMax #noPrompt
-            true
-        )
-
-        on btn_convert_proxy_s9 pressed do icpConvertSceneToProxy()
 
         on btn_final_validate_s9 pressed do (
 			-- Sauvegarde du OK file (avec validation cat/subcat intégrée)

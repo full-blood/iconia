@@ -2300,11 +2300,6 @@ macroScript Iconia_FileChecker
                 "Proxies créés : " + (converted.count as string) + "\n" +
                 "Ignorés / avertissements : " + (skipped.count as string)
             ) title:"CONVERT TO PROXY"
-
-            -- Le résumé est vu ; on ferme ensuite le rollout, puis l'utilisateur choisit si Max reste ouvert.
-            local closeChoice = yesNoCancelBox "Conversion Proxy terminée.\n\nVoulez-vous fermer 3ds Max ?\n\nOui = Fermer 3ds Max\nNon = Laisser 3ds Max ouvert" title:"CONVERT TO PROXY"
-            try(DestroyDialog rlMasterChecker)catch()
-            if closeChoice == #yes do quitMax #noPrompt
             true
         )
 

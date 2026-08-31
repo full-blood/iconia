@@ -2191,6 +2191,20 @@ macroScript Iconia_FileChecker
             result
         )
 
+        fn icpBuildReport sourcePath proxyPath converted skipped = (
+            local reportPath = getFilenamePath proxyPath + getFilenameFile proxyPath + "_report.txt"
+            local report = createFile reportPath
+            format "Corona Proxy conversion\n" to:report
+            format ("Source saved first: " + sourcePath + "\n") to:report
+            format ("Proxy scene: " + proxyPath + "\n") to:report
+            format ("Converted nodes: " + (converted.count as string) + "\n") to:report
+            for pair in converted do format ("  OK: " + pair[1] + " -> " + pair[2] + "\n") to:report
+            format ("Skipped nodes: " + (skipped.count as string) + "\n") to:report
+            for item in skipped do format ("  SKIP: " + item + "\n") to:report
+            close report
+            reportPath
+        )
+
         fn icpConvertSceneToProxy = (
             if maxFileName == "" or maxFilePath == "" then (
                 messageBox "Enregistrez d'abord le .max source avant la conversion." title:"CONVERT TO PROXY"
@@ -2291,20 +2305,19 @@ macroScript Iconia_FileChecker
                 return false
             )
 
-            -- Réindexation silencieuse : le serveur détecte _proxy.max et active l'option PROXY dans Library.html.
-            notifyLibraryAddAsset txtPath
+            local reportPath = icpBuildReport sourcePath proxyScenePath converted skipped
+            -- Même mécanisme que FINAL VALIDATE : le serveur détecte _proxy.max,
+            -- renseigne proxy_suffix="_proxy" et régénère les données de la page HTML.
+            local libraryUpdated = notifyLibraryAddAsset txtPath
+            local libraryMessage = if libraryUpdated then "Bibliothèque : champ PROXY mis à jour automatiquement." else "Bibliothèque : mise à jour non lancée; relancez FINAL VALIDATE si nécessaire."
             messageBox (
                 "Conversion terminée.\n\n" +
-                "Source sans proxy :\n" + maxFileName + "\n\n" +
-                "Scène proxy :\n" + sourceStem + "_proxy.max\n\n" +
+                "Source sans proxy :\n" + sourcePath + "\n\n" +
+                "Scène proxy :\n" + proxyScenePath + "\n\n" +
                 "Proxies créés : " + (converted.count as string) + "\n" +
-                "Ignorés / avertissements : " + (skipped.count as string)
+                "Ignorés / avertissements : " + (skipped.count as string) + "\n\n" +
+                libraryMessage + "\n\nRapport :\n" + reportPath
             ) title:"CONVERT TO PROXY"
-
-            -- Le résumé est vu ; on ferme ensuite le rollout, puis l'utilisateur choisit si Max reste ouvert.
-            local closeChoice = yesNoCancelBox "Conversion Proxy terminée.\n\nVoulez-vous fermer 3ds Max ?\n\nOui = Fermer 3ds Max\nNon = Laisser 3ds Max ouvert" title:"CONVERT TO PROXY"
-            try(DestroyDialog rlMasterChecker)catch()
-            if closeChoice == #yes do quitMax #noPrompt
             true
         )
 
