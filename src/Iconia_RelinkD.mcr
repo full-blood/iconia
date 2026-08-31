@@ -1,3 +1,16 @@
+/*
+================================================================================
+Script Name: Iconia_RelinkD
+Category: Iconia
+Description: Propose le relink des textures de D:\CG Library\ vers L:\,
+uniquement lorsque le fichier cible existe.
+================================================================================
+*/
+macroScript Iconia_RelinkD
+category:"Iconia"
+tooltip:"Relink D CG Library vers L"
+buttonText:"Relink D to L"
+(
 try(destroyDialog IconiaRelinkDDialog)catch()
 
     struct IconiaRelinkDItem (sourcePath, targetPath, targetExists)
@@ -235,3 +248,4 @@ try(destroyDialog IconiaRelinkDDialog)catch()
     )
 
 createDialog IconiaRelinkDDialog style:#(#style_titlebar, #style_sysmenu, #style_toolwindow)
+)
