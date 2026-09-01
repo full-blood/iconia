@@ -2,14 +2,14 @@
 ================================================================================
 Script Name: Iconia_RelinkD
 Category: Iconia
-Description: Propose le relink des textures de D:\CG Library\ vers L:\,
-uniquement lorsque le fichier cible existe.
+Description: Propose les relinks de bibliothèques D: et L:\CG Library\
+vers leurs chemins normalisés sur L:, uniquement si le fichier cible existe.
 ================================================================================
 */
 macroScript Iconia_RelinkD
 category:"Iconia"
-tooltip:"Relink D CG Library vers L"
-buttonText:"Relink D to L"
+tooltip:"Relink paths D: and CG_Library to L:"
+buttonText:"Relink missing maps to L:\\"
 (
 try(destroyDialog IconiaRelinkDDialog)catch()
 
@@ -19,14 +19,32 @@ try(destroyDialog IconiaRelinkDDialog)catch()
     (
         if path == undefined or path == "" then return false
         local normalized = substituteString path "/" "\\"
-        matchPattern normalized pattern:"D:\\CG Library\\*" ignoreCase:true
+        (matchPattern normalized pattern:"D:\\CG Library\\*" ignoreCase:true) or
+        (matchPattern normalized pattern:"D:\\2-Textures\\*" ignoreCase:true) or
+        (matchPattern normalized pattern:"L:\\CG Library\\2-Textures\\*" ignoreCase:true) or
+        (matchPattern normalized pattern:"L:\\CG Library\\3-Models\\*" ignoreCase:true)
     )
 
     fn iconiaRelinkD_getTargetPath sourcePath =
     (
         local normalized = substituteString sourcePath "/" "\\"
-        local prefixLength = "D:\\CG Library\\".count
-        "L:\\" + (substring normalized (prefixLength + 1) -1)
+        if matchPattern normalized pattern:"D:\\CG Library\\*" ignoreCase:true then
+        (
+            "L:\\" + (substring normalized ("D:\\CG Library\\".count + 1) -1)
+        )
+        else if matchPattern normalized pattern:"D:\\2-Textures\\*" ignoreCase:true then
+        (
+            "L:\\" + (substring normalized ("D:\\2-Textures\\".count + 1) -1)
+        )
+        else if matchPattern normalized pattern:"L:\\CG Library\\2-Textures\\*" ignoreCase:true then
+        (
+            "L:\\2-Textures\\" + (substring normalized ("L:\\CG Library\\2-Textures\\".count + 1) -1)
+        )
+        else if matchPattern normalized pattern:"L:\\CG Library\\3-Models\\*" ignoreCase:true then
+        (
+            "L:\\3-Models\\" + (substring normalized ("L:\\CG Library\\3-Models\\".count + 1) -1)
+        )
+        else normalized
     )
 
     fn iconiaRelinkD_collectMapInstances =
@@ -93,8 +111,8 @@ try(destroyDialog IconiaRelinkDDialog)catch()
 
     rollout IconiaRelinkDDialog "Iconia - Relink D vers L" width:1180 height:590
     (
-        label lbl_description "Textures trouvées sous D:\\CG Library\\. Sélectionnez celles à relinker vers L:\\ ; seules les cibles existantes seront modifiées." pos:[20,15] width:1140 height:18
-        label lbl_left "Textures disponibles sur D: (CG Library)" pos:[20,45] width:500 height:18
+        label lbl_description "Maps des chemins D: et L:\\CG Library\\. Sélectionnez celles à normaliser vers L:\\ ; seules les cibles existantes seront modifiées." pos:[20,15] width:1140 height:18
+        label lbl_left "Maps disponibles à normaliser" pos:[20,45] width:500 height:18
         label lbl_right "Textures sélectionnées pour relink vers L:" pos:[630,45] width:520 height:18
         dotNetControl lb_available "System.Windows.Forms.ListBox" pos:[20,68] width:540 height:440
         dotNetControl lb_selected "System.Windows.Forms.ListBox" pos:[620,68] width:540 height:440
@@ -228,7 +246,7 @@ try(destroyDialog IconiaRelinkDDialog)catch()
                 )
                 else
                 (
-                    local confirmation = (validItems.count as string) + " texture(s) seront relinkées de D:\\CG Library\\ vers L:\\."
+                    local confirmation = (validItems.count as string) + " map(s) seront relinkées vers leur chemin normalisé sur L:\\."
                     if missingCount > 0 do confirmation += "\n\n" + (missingCount as string) + " texture(s) cible(s) manquante(s) seront ignorées."
                     if queryBox confirmation title:"Confirmer le relink" then
                     (
