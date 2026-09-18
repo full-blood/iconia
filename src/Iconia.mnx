@@ -23,4 +23,6 @@
     <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="6b1b8e91-4e5e-4635-a9b0-40baac61e8b9" ActionId="647394-Iconia_RelinkD`Iconia" BeforeId="e58725ef-0dd6-4f9d-b164-2f9eb5aad3ef"/>
     <DeleteItem Id="6b1b8e91-4e5e-4635-a9b0-40baac61e8b9"/>
     <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="1e7eee49-9294-47a0-85f6-34568d724a2c" ActionId="647394-Iconia_RelinkD`Iconia" BeforeId="e58725ef-0dd6-4f9d-b164-2f9eb5aad3ef"/>
+    <CreateMenuAction MenuId="e10cdaa0-6499-4b82-9b3d-d185d9d02c06" Id="4b8c0cd5-7096-41cd-97b6-d373669d51a8" ActionId="647394-Iconia_RelinkD`Iconia" BeforeId="1e7eee49-9294-47a0-85f6-34568d724a2c"/>
+    <DeleteItem Id="4b8c0cd5-7096-41cd-97b6-d373669d51a8"/>
 </MaxMenuTransformations>

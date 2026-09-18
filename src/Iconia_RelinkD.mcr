@@ -34,7 +34,7 @@ try(destroyDialog IconiaRelinkDDialog)catch()
         )
         else if matchPattern normalized pattern:"D:\\2-Textures\\*" ignoreCase:true then
         (
-            "L:\\" + (substring normalized ("D:\\2-Textures\\".count + 1) -1)
+            "L:\\2-Textures\\" + (substring normalized ("D:\\2-Textures\\".count + 1) -1)
         )
         else if matchPattern normalized pattern:"L:\\CG Library\\2-Textures\\*" ignoreCase:true then
         (
